@@ -1,0 +1,98 @@
+html, body, #root, .app-outer{
+  @extend %fhw;
+}
+
+body{
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+[placeholder]:empty:before {
+  content: attr(placeholder);
+  display: block;
+  cursor: text;
+  color: $lgn-pl;
+}
+
+::selection {
+  background: $cl-high;
+}
+::-moz-selection {
+  background: $cl-high;
+}
+::-webkit-selection {
+  background: $cl-high;
+}
+// .error{
+//   color: $w;
+//   background: $err-bg;
+//   font-family: $sp-r;
+//   position: relative;
+//   z-index: 2;
+//   span{
+//     font-weight: 500
+//   }
+// }
+
+// .logged-in{
+//   span{
+//     color: $w;
+//   }
+//   .dropdown-menu{
+//     left: -8rem;
+//   }
+//   .dropdown-toggle{
+//     color: $w !important;
+//     border-left: 1px solid rgba($w, .1);
+//     padding-top: 0.9rem;
+//     padding-left: 1rem !important;
+//     &::after{
+//       border-top: .5em solid;
+//       border-right: .5em solid transparent;
+//       border-left: .5em solid transparent;
+//     }
+//   }
+// }
+
+.btn-accent{
+  color: $w;
+  font-family: $sp-r;
+  font-size: 17px;
+  border-radius: 5px;
+  box-shadow: inset -1px 1px 0 0 rgba($w, 0);
+  border: 1px solid rgba($b, .05);
+  background-color: $btn-pr;
+  &:hover{
+    background-color: darken($btn-pr, 10%);
+  }
+}
+
+// .btn-accent-outline{  
+//   padding: .5rem 1rem;
+//   color: $acc-dark;
+//   background-color: $w;
+//   border-color: $acc-dark;
+//   &:hover{
+//     color: $w;
+//     background-color: $acc-dark;
+//     border-color: $acc-dark;
+//   }
+// }
+
+// .custom-control-label{
+//   margin-left: .5rem;
+//   color: $sc;
+//   font-size: 17px;
+//   &:before, &:after{
+//     top: .15rem;
+//     width: 1.25rem;
+//     height: 1.25rem;
+//     left: -2rem;
+//   }
+// }
+
+// .custom-control-input:checked~.custom-control-label::before{
+//   color: $w;
+//   border-color: $acc;
+//   background-color: $acc;
+// }

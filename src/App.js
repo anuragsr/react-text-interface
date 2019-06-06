@@ -1,26 +1,128 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { Component } from 'react'
+import Cookies from 'universal-cookie'
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+import Background from './components/Background'
+import ManagerContent from './components/ManagerContent'
+import HttpService from './services/HttpService'
+import { l, auth } from './helpers/common'
+
+import './scss/app.scss'
+
+const cookies = new Cookies()
+
+export default class App extends Component {
+  constructor(props){
+    super(props)
+    this.http = new HttpService()
+    this.state = {
+      username: "",
+      password: "",
+      isAuth: false,
+      showErr: false,
+      perm: []
+    }
+  }
+
+  componentDidMount(){
+    let ck = cookies.get("text_int_con")
+    if(typeof ck !== "undefined"){
+      this.setState({
+        username: ck.x_u,
+        password: ck.x_p
+      }, this.login)
+    }
+    else{
+      this.setState({
+        username: 'contenter',
+        password: 'ExXgB6QjfQUwyMm7gcEd'
+      }, this.login)
+    }
+  }
+
+  handleInputChange = event => {
+    const target = event.target
+    const value = target.value
+    this.setState({
+      [target.name]: value
+    })
+  }
+
+  login = e => {
+    e && e.preventDefault()
+    // l(this.state)
+    this.http
+    .post('/api/v1/login', {
+      username: this.state.username,
+      password: this.state.password,
+    })
+    .then(res => {
+      l(res)
+
+      this.setState({ isAuth: true })
+
+      // Set auth user
+      auth.username = this.state.username
+      auth.password = this.state.password
+      
+      let ck = cookies.get("text_int_con")
+      if(typeof ck === "undefined"){
+        cookies.set("text_int_con", {
+          x_u: auth.username,
+          x_p: auth.password
+        }, { maxAge: 3600 })
+      }
+      // l(auth)
+    })
+    .catch(err => {
+      l(err)
+      this.setState({ showErr: true })
+      setTimeout(() => {
+        this.setState({ showErr: false })
+      }, 3000)
+
+      // this.setState({ isAuth: true })      
+    })
+  }
+
+
+  logout = () => {
+    cookies.remove("text_int_con")
+    this.setState({ 
+      isAuth: false,
+      perm: [],
+      username: "",
+      password: ""
+    })
+  }
+  
+  render(){
+    return (
+      <div className="app-outer">
+        {!this.state.isAuth && <div className="h-100">
+          <Background />
+          <div className="login-outer">
+            <div className="login-box">
+              <form onSubmit={this.login}>
+                <div className="login-content">
+                  <img src="assets/pino.svg" alt=""/>
+                  <div className="heading">Welcome to Pino!</div>
+                    <input name="username" value={this.state.username} onChange={this.handleInputChange} placeholder="Login" type="text"/>
+                    <input name="password" value={this.state.password} onChange={this.handleInputChange} placeholder="Password" type="password"/>
+                    <button className="btn-accent" type="submit">Sign in</button>
+                </div>
+              </form>
+              {this.state.showErr &&
+              <div className="error-content">
+                <div className="err">Error</div>
+                <div>Please enter a valid email and password</div>              
+              </div>}
+            </div>
+          </div>
+        </div>}
+        {this.state.isAuth && <div className="h-100">
+          <ManagerContent logout={this.logout}/>
+        </div>}
+      </div>
+    )
+  }
 }
-
-export default App;

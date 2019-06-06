@@ -1,0 +1,151 @@
+.manager-outer{
+  @extend %fhw;  
+  height: auto;
+	min-height: 100%;
+  background: $bg-main;
+	.navbar{
+	  // z-index: 1;
+	  box-shadow: 0 10px 20px 0 rgba($b, .1);
+	  font-family: $sp-r;
+	  background: $bg-pr;
+	  height: 60px;
+	  padding: 0;
+	  .navbar-brand{
+	    border-right: 1px solid rgba($w, .2);
+	    padding-left: 7px;
+	    padding-right: 7px;
+	    img{ @include hw(48, 48); }
+	  }
+	  .navbar-nav{
+	    padding-right: 10px;
+	    .dropdown-menu{
+	    	left: -135px;
+	    }
+	    .nav-item{
+	    	color: $w;
+	    	font-size: 15px;
+	    	&.dropdown{
+	    		border-left: 1px solid rgba($w, .2);
+	    	}
+	    }
+	    img.avatar{ @include hw(36, 36); }
+	  }
+	}
+	.content{
+		position: relative;
+		min-height: calc(100vh - 60px);
+		.greeting-outer{
+			@extend %fhw;
+			@extend %j-c;
+			background: $w;
+			.greeting-inner{
+				text-align: center;
+				width: 368px;
+				font-family: $sp-r;
+				.title{				
+				  font-size: 36px;
+				  line-height: 1.22;
+				  letter-spacing: 0.4px;
+				  text-align: center;
+				  color: $cl-pr;
+				  margin-top: 20px;
+				}				
+				.btn-accent{
+				  @include hw(48, 100);
+				  margin-top: 25px;
+				  margin-bottom: 30px;				  
+				}
+				.txt-rem{
+					font-size: 19px;
+					color: $lgn-pl;
+				}
+			}
+		}
+		.content-outer{
+			@extend %fhw;
+			padding-top: 70px;
+			.ctn-text{
+				width: 100%;
+				padding: 20px;
+				margin-bottom: 45px;
+				background: $w;
+				border-radius: 2px;
+			 	box-shadow: 0 0 24px 0 rgba($b, .1);
+				border: 1px solid $ctn-text-bdr;
+				&.ctn-source{
+					@extend %j-f-s;
+					padding-left: 24px;
+					padding-right: 24px;
+					height: 60px;
+					img{ @include hw(24, 24); }
+					input{
+						text-overflow: ellipsis;
+						position: relative;
+						top: -2px;
+						margin-left: 24px;
+						font-size: 19px;
+						font-family: $sp-r;
+						width: 100%;
+						border: none;
+						&::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+						  color: $lgn-pl;
+						}
+						&::-moz-placeholder { /* Firefox 19+ */
+						  color: $lgn-pl;
+						}
+						&:-ms-input-placeholder { /* IE 10+ */
+						  color: $lgn-pl;
+						}
+						&:-moz-placeholder { /* Firefox 18- */
+						  color: $lgn-pl;
+						}
+						&:focus{
+						  outline: none;
+						}
+					}
+				}
+				&.ctn-text-main{
+					position: relative;
+					padding: 70px;
+					font-family: $sp-r;
+					.plh{ @include pa(24, 24); }					
+					.ctn-text-content{
+						font-size: 19px;					  
+					  line-height: 1.47;					  
+					  color: $cl-ctn-text;
+					  &:focus{
+					  	outline: none;
+					  }
+					  span.mark{
+					  	white-space: pre;
+					  	background: none;
+					  	display: inline-block;
+					  	vertical-align: baseline;
+					  	cursor: pointer;
+					  	padding: 0;
+					  	color: $cl-sel;  	
+					  }
+					  span.highlight, span.highlight1{
+					  	background: $cl-high;
+					  }
+					}						
+				}
+			}
+		}
+		.ctn-buttons{
+			@include pa("", 0, 0, "");
+			width: 100%;
+			text-align: right;
+			padding: 16px;
+			.btn-accent{
+			  @include hw(48, 97);
+			  margin-top: 25px;				
+				&:nth-of-type(1){
+				  @include hw(48, 168);
+				  background-color: rgba($b, .4);
+				  margin-right: 10px;
+				}
+			}
+		}
+	}
+}
