@@ -20,6 +20,7 @@ export const trimSpaces = string => {
     .replace(/&gt;/g, '>')
     .replace(/&lt;/g, '<')
 }
+export const sp = e => e && e.stopPropagation()
 // export const withIndex = arr => arr.map((v,i) => ({value: v, index: i}))
 // export const getFormattedTime = date => {
 //   if(date === null || typeof date === "undefined")
