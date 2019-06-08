@@ -1,4 +1,6 @@
+// For selection popover
 .ctn-pop-outer {
+  opacity: 0;
   position: relative;
   background: $bg-pop;
   color: $w;
@@ -138,47 +140,7 @@
         }
         .ctn-ptq-opt{
           padding: 20px;
-          border-top: 1px solid rgba($ctn-auto-bdr, .2);
-          .slider-outer{
-            position: relative;
-            width: 100%;
-            font-family: $sp-r;  
-            .slider-rail{
-              position: absolute;
-              width: 100%;
-              height: 4px;
-              border-radius: 5px;
-              background-color: $sl-bg;
-              cursor: pointer;    
-            }
-            .slider-handle{
-              position: absolute;
-              margin-left: -10px;
-              margin-top: -8px;
-              width: 20px;
-              height: 20px;
-              border: none;
-              text-align: center;
-              cursor: grab;
-              border-radius: 50%;
-              background-color: $bg-pr;
-              z-index: 1;
-            }
-            .slider-track{
-              position: absolute;
-              height: 4px;
-              z-index: 0;
-              cursor: pointer;    
-              background-color: $bg-pr;
-            }
-          }
-          .sl-title{ // For both slider and tags title
-            @extend %j-s-b;
-            width: 100%;
-            font-size: 15px;
-            color: $w;
-            margin-bottom: 25px;
-          }
+          border-top: 1px solid rgba($ctn-auto-bdr, .2);          
         }
         .btn-accent{      
           height: 50px;
@@ -220,6 +182,10 @@
       .btn-accent{      
         height: 50px;
         width: 100%;
+        // &.btn-sec{
+        //   width: 48%;
+        //   margin-left: 5px;
+        // }
       }
       img.close{
         cursor: pointer;
@@ -250,7 +216,8 @@ ul.tag-ctn{
     border-radius: 5px;
     margin-right: 5px;
     margin-bottom: 5px;  
-    height: 38px;
+    // height: 38px;
+    min-height: 38px;
     div{
       @extend %j-s-b;
       height: 100%;
@@ -278,12 +245,67 @@ ul.tag-ctn{
   }
 }
 
+// For slider
+.slider-outer{
+  position: relative;
+  width: 100%;
+  font-family: $sp-r;  
+  .slider-rail{
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    border-radius: 5px;
+    background-color: $sl-bg;
+    cursor: pointer;    
+  }
+  .slider-handle{
+    position: absolute;
+    margin-left: -10px;
+    margin-top: -8px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    text-align: center;
+    cursor: grab;
+    border-radius: 50%;
+    background-color: $bg-pr;
+    z-index: 1;
+  }
+  .slider-track{
+    position: absolute;
+    height: 4px;
+    z-index: 0;
+    cursor: pointer;    
+    background-color: $bg-pr;
+  }
+}
+
+.sl-title{
+  @extend %j-s-b;
+  width: 100%;
+  font-size: 15px;
+  color: $w;
+  margin-bottom: 25px;
+}
+
+.slider-main{
+  margin-top: 60px;  
+  .sl-title{
+    line-height: 1.53;
+    font-size: 17px;
+    color: $cl-ctn-text;
+  }
+}
+
+// For hover popover
 .ctn-pop-hover{
   // @include hw(50, 400);
-  min-height: 50px;
   // width: 400px;
+  min-height: 50px;
+  width: max-content;
   @include pa(0, 0);
   display: none;
+  // opacity: 0;
   color: $w;
   background: $bg-pop;
   padding: 6px 10px;

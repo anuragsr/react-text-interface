@@ -1,11 +1,9 @@
 import React, { Component } from 'react'
 import ContentEditable from 'react-contenteditable'
+import Popover from 'react-text-selection-popover'
+import $ from 'jquery'
 import rangy from 'rangy'
 import 'rangy/lib/rangy-classapplier'
-
-import Popover from 'react-text-selection-popover'
-import placeRightBelow from 'react-text-selection-popover/lib/placeRightBelow'
-import $ from 'jquery'
 
 import AutoComplete from './AutoComplete'
 import Tags from './Tags'
@@ -14,9 +12,8 @@ import HttpService from '../services/HttpService'
 import { l, cl, auth, rand, sp } from '../helpers/common'
 
 let tmpHtml
-, currSelObj
-, currElGroup
 , hoverSelId
+, hoverEl
 , isSelecting = false
 , isEditing = false
 
@@ -26,13 +23,17 @@ export default class ManagerContent extends Component {
     // l(this.props)
     rangy.init()
     this.contentEditable = React.createRef()
+    this.ctnMainRef = React.createRef()
     this.popRef = React.createRef()
     this.http = new HttpService()
     this.state = {
       name: "Yulia",
       username: "yulia@mail.ru",
-      showGreeting: false,
-      ceContent: "Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample. Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample",
+      showGreeting: true,
+      notifType: "greeting", // greeting, submit, thanks
+      source: { name: "" },
+      ceContent: "",
+      // ceContent: "Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample. Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample",
       popPos: "up",
       popOpen: false,
       popType: "",
@@ -48,6 +49,8 @@ export default class ManagerContent extends Component {
         editType: "add"
       },
       tagStep: 1,
+      pq: 0,
+      noSource: false
     }
   }
 
@@ -68,24 +71,11 @@ export default class ManagerContent extends Component {
       }
     })
   }
-  
+
   componentDidUpdate(){
-    l("updated")
-    // this.positionHoverPopover()
-  }
-
-  positionHoverPopover = () => {
-    // if(currElGroup){      
-    // }
-    let pop = $(this.popRef.current)
-    , pos = currElGroup.eq(0).position()
-    , width = currElGroup.eq(0).width()
-
-    pop.css({
-      display: "block",
-      left: pos.left + width / 2 - pop.width() / 2, 
-      top: pos.top - 50, // May include height later
-    })
+    setTimeout(() => {
+      $(".ctn-pop-outer").css({ opacity: 1 })
+    }, 100)
   }
 
   showHoverPopover = e => {
@@ -107,50 +97,68 @@ export default class ManagerContent extends Component {
       , selEmoArr = this.state.selEmoArr.filter(s => s.selId === selid)      
       
       hoverSelId = selid
-      
+      hoverEl = el
+
       this.setState({
         hoverTagArr: selTagArr.length ? selTagArr[0].tagArr: [],
+        hoverPtq: selTagArr.length ? selTagArr[0].ptq: 0,
         hoverEmo: selEmoArr.length ? selEmoArr[0].emotion : 0
       }, () => {
 
         // Applying highlight to all matched, so it looks like a group
-        currElGroup = $(mainParent).find(`[selid="${selid}"]`)
-        currElGroup.addClass("highlight")     
+        // currElGroup = $(mainParent).find(`[selid="${selid}"]`)
+        // currElGroup.addClass("highlight")     
 
         // Showing popup on hover
-        this.positionHoverPopover()
+        let pop = $(this.popRef.current)
+        , pos = $(el).position()
+        , width = $(el).width()
+
+        pop.css({
+          // left: pos.left + width / 2 - pop.width() / 2, 
+          display: "block",
+          left: pos.left + width / 2, 
+          transform: "translateX(-50%)", // Neat trick!
+          top: pos.top - 50, // May include height later
+        })
+
       })
     }
   }
 
   hideHoverPopover = () => {
-    if(currElGroup){
-      currElGroup.removeClass("highlight")
-      currElGroup = null        
-    }
+    // if(currElGroup){
+    //   currElGroup.removeClass("highlight")
+    //   currElGroup = null        
+    // }
+    // hoverEl = null
 
     let pop = $(this.popRef.current)
     pop.css({
-      display: "none"
+      display: "none",
     })
   }
 
-  hideGreeting = () => this.setState({ showGreeting: false })
-  
+  setNotification = notifType => this.setState({ notifType })
+
   logout = () => this.props.logout()
   
-  handleInputChange = event => {
-    const target = event.target
-    const value = target.value
-    this.setState({
-      [target.name]: value
+  handleSourceChange = name => {
+    this.setState({ 
+      source: { name },
+      noSource: name === ""
     })
   }
+
+  sourceAdded = source => this.setState({ source })  
 
   handleCeChange = evt => {
     let val = evt.target.value
     if(val === "<br>" || val === "<div><br></div>") val = ""
-    this.setState({ ceContent: val })
+    this.setState({ ceContent: val }, () => {
+      let parent = this.contentEditable.current
+      tmpHtml = $(parent).html()
+    })
   }
 
   handlePaste = e => {
@@ -161,25 +169,50 @@ export default class ManagerContent extends Component {
   handleMouseMove = e => isSelecting = rangy.getSelection().toString().length > 0
 
   handleMouseDownOutside = e => {
-    l("Mouse Down outside")
+    // l("Mouse Down outside")
+
+    let mainParent = this.contentEditable.current
+    , elementsToRemove = $(mainParent).find(".highlight")
+    , elLength = elementsToRemove.length
+
+    // l("Remove these elements!", elementsToRemove)
+
+    if(elLength === 1) {
+      elementsToRemove
+      .replaceWith(elementsToRemove.html())
+    }
+    else {          
+      elementsToRemove.each((idx, obj) => {
+        let el = $(obj)
+        if(idx === 0)
+          el.replaceWith(el.html())
+        else if(idx === elLength - 1)
+          el.replaceWith(el.html())
+        else
+          el.replaceWith(el.html())
+      })
+    }
+
+    tmpHtml = $(mainParent).html()
     this.closePopover(0, tmpHtml)
   }
 
-  handleMouseDown = e => {
-    l("Mouse Down on contenteditable")
-    sp(e)
-    this.closePopover(0, tmpHtml)
-  }
+  // handleMouseDown = e => {
+  //   // l("Mouse Down on contenteditable")
+  //   sp(e)
+  //   this.closePopover(0, tmpHtml)
+  // }
 
   handleMouseUp = e => {
+    hoverEl = null
+
     // Preserving html in case no tags added
     let parent = this.contentEditable.current
     tmpHtml = $(parent).html()
-    l(tmpHtml)
+    // l(tmpHtml)
 
     let currSel = rangy.getSelection()
     , selText = currSel.toString()
-    , selTagArr = this.state.selTagArr
 
     if(selText.length){
       let tempSelObj = this.state.tempSelObj      
@@ -193,20 +226,20 @@ export default class ManagerContent extends Component {
         popOpen: true,
       }, () => {
         this.highlightSelection(currSel.getRangeAt(0))
-        currSel.removeAllRanges()
+        // currSel.removeAllRanges() /* Not needed because user can't copy-paste */
       })
     }
   }
 
   highlightSelection = sel => {
-    let selid = this.state.tempSelObj.selId   
+    let opts = { elementAttributes: { selid: this.state.tempSelObj.selId } }
     rangy
-    .createClassApplier('highlight', { elementAttributes: { selid: selid } })
+    .createClassApplier('highlight', opts)
     .applyToSelection()    
   }
 
   closePopover = (e, html) => {
-    l(this.state.selTagArr, this.state.selEmoArr)
+    // l(this.state.selTagArr, this.state.selEmoArr)
     this.setState({ 
       popOpen: false, 
       tagStep: 1,
@@ -219,14 +252,14 @@ export default class ManagerContent extends Component {
         emotion: 0, 
         editType: "add"
       },
-    }, () => {
+    }, () => {      
       tmpHtml = this.state.ceContent
       isEditing = false      
     })
   }
 
   openPopover = options => {
-    l(hoverSelId, options)
+    // l(hoverSelId, options)
     let tempSelObj = this.state.tempSelObj
 
     if(options.edit){
@@ -247,7 +280,7 @@ export default class ManagerContent extends Component {
           }        
         break;
 
-        case "emoji":
+        default: //case "emoji"
           if(options.otherChosen){ // Copy object from other array          
             tempSelObj = Object.assign({}, this.state.selTagArr.filter(s => s.selId === hoverSelId)[0])
             tempSelObj.editType = "add"
@@ -275,7 +308,10 @@ export default class ManagerContent extends Component {
 
   tagAdded = tag => {
     let tempSelObj = this.state.tempSelObj
-    tempSelObj.tagArr.push(tag)
+    , tempTagArr = tempSelObj.tagArr
+    
+    if(!tempTagArr.filter(t => t.id === tag.id).length)
+      tempTagArr.push(tag)
     
     this.setState({ tagStep: 2, tempSelObj })
   }
@@ -283,34 +319,81 @@ export default class ManagerContent extends Component {
   tagRemoved = tag => {
     let tempSelObj, hoverTagArr
 
-    if(hoverSelId) tempSelObj = this.state.selTagArr.filter(s => s.selId === hoverSelId)[0]      
+    if(hoverSelId) tempSelObj = this.state.selTagArr.filter(s => s.selId === hoverSelId)[0]    
     else tempSelObj = this.state.tempSelObj
 
     hoverTagArr = tempSelObj.tagArr.filter(s => s.id !== tag.id)
     tempSelObj.tagArr = hoverTagArr
 
     if(hoverTagArr.length) this.setState({ tempSelObj, hoverTagArr }) 
-    else this.setState({ tempSelObj, hoverTagArr, tagStep: 1 })
+    else {
+      let emoArr = this.state.selEmoArr.filter(s => s.selId === hoverSelId)
+      , selTagArr = this.state.selTagArr.filter(s => s.selId !== hoverSelId)
+      // Check if emoji arr also has no length. 
+      if(!emoArr.length){
+        // If no length, remove marked elements, remove from selTagArr
+        let mainParent = this.contentEditable.current
+        , selid = hoverEl.attr("selid")
+        , elementsToRemove = $(mainParent).find(`[selid="${selid}"]`)
+        , elLength = elementsToRemove.length
+        
+        // l("Remove these elements!", elementsToRemove, selid)
+
+        if(elLength === 1) {
+          elementsToRemove
+          .replaceWith(elementsToRemove.html().replace(/\[|\]/g, ''))
+        }
+        else {          
+          elementsToRemove.each((idx, obj) => {
+            let el = $(obj)
+            if(idx === 0)
+              el.replaceWith(el.html().replace(/\[/g, ''))
+            else if(idx === elLength - 1)
+              el.replaceWith(el.html().replace(/\]/g, ''))
+            else
+              el.replaceWith(el.html())
+          })
+        }
+
+        tmpHtml = $(this.contentEditable.current).html()
+        
+        this.setState({ 
+          tempSelObj, 
+          selTagArr, 
+          hoverTagArr, 
+          tagStep: 1 
+        }, () => {
+          this.hideHoverPopover()
+          this.closePopover(0, tmpHtml)
+        })
+      } else {
+        // If length, normal update
+        this.setState({ 
+          tempSelObj, 
+          selTagArr, 
+          hoverTagArr           
+        }) 
+      }
+    }
   }
 
-  addMoreTags = () => {
-    this.setState({ tagStep: 1 })
-  }
+  addMoreTags = () => this.setState({ tagStep: 1 })
 
   PTQChanged = val => {
     let tempSelObj = this.state.tempSelObj
     tempSelObj.ptq = val
     this.setState({ tempSelObj })
   }
+
+  PQChanged = pq => this.setState({ pq })
   
   selectEmoji = num => {
-    let tempSelObj, hoverEmo
+    let tempSelObj
 
     if(hoverSelId) tempSelObj = this.state.selEmoArr.filter(s => s.selId === hoverSelId)[0]      
     else tempSelObj = this.state.tempSelObj
 
     tempSelObj.emotion = num
-    // hoverEmo = num
 
     this.setState({ tempSelObj })
   }
@@ -337,7 +420,7 @@ export default class ManagerContent extends Component {
             else this.setState({ selTagArr }, this.createSelectionArea)
           break;
 
-          case "edit": 
+          default: //case "edit"
             selTagArr = this.state.selTagArr.map(obj => {
               if(obj.selId === tempSelObj.selId) return tempSelObj
               else return obj
@@ -347,7 +430,7 @@ export default class ManagerContent extends Component {
         }
       break;
 
-      case "emoji": 
+      default: //case "emoji"
         switch(tempSelObj.editType){
           case "add": 
             let noCreate = !!tempSelObj.noCreate            
@@ -363,7 +446,7 @@ export default class ManagerContent extends Component {
             else this.setState({ selEmoArr }, this.createSelectionArea)
           break;
 
-          case "edit": 
+          default: //case "edit"          
             selEmoArr = this.state.selEmoArr.map(obj => {
               if(obj.selId === tempSelObj.selId) return tempSelObj
               else return obj
@@ -395,7 +478,43 @@ export default class ManagerContent extends Component {
 
   submit = e => {
     sp(e)
-    l(this.state.ceContent)
+    // l(this.state)
+    if(this.state.source.name === ""){
+      // l("Sauce please")
+      this.setState({ noSource: true })
+    } else {      
+      let tags = this.state.selTagArr.map(s => {
+        let { start, end, text, ptq } = s
+        return { 
+          start, end, text, ptq,
+          tag_id: s.tagArr.map(t => t.id)
+        }
+      })
+      , emotions = this.state.selEmoArr.map(s => {
+        let { start, end, text, emotion } = s
+        return { start, end, text, emotion }
+      })
+      , req = {
+        user_type: "content_manager",
+        source: this.state.source.name,
+        text: $(this.contentEditable.current).text().replace(/\[|\]/g, ''),
+        pq: this.state.pq, 
+        tags, emotions
+      }
+
+      l(req)
+      this.http
+      .post('/api/v1/submit_data', req)
+      .then(res => {
+        l(res)
+        this.setState({ 
+          notifType: "submit",
+          source: { name: "" },
+          ceContent: ""
+        })
+      })
+      .catch(err => l(err))
+    }
   }
   
   render(){
@@ -411,26 +530,37 @@ export default class ManagerContent extends Component {
       selectionWidth,
       selectionHeight
     }) => {
-      const style = { position: "fixed" }
-      style.left = selectionLeft + (selectionWidth / 2) - (boxWidth / 2)
-      style.top = selectionTop - boxHeight - gap
-
-      if (style.left < frameLeft) {
-        style.left = frameLeft
-      } else if (style.left + boxWidth > frameWidth) {
-        style.left = frameWidth - boxWidth
+      const style = { 
+        position: "fixed",
+        zIndex: 1
       }
-     
-      if (style.top < frameTop || this.state.popPos === "down") { // Switch for up/down
-        style.top = selectionTop + selectionHeight + gap
+
+      if(hoverEl){    
+        style.position =  "absolute"
+        style.left = hoverEl.position().left + hoverEl.width()/2
+        style.top = hoverEl.position().top + hoverEl.height() + 5
+        style.transform = "translateX(-50%)"
+      } else{        
+        style.left = selectionLeft + (selectionWidth / 2) - (boxWidth / 2)
+        style.top = selectionTop - boxHeight - gap
+
+        if (style.left < frameLeft) {
+          style.left = frameLeft
+        } else if (style.left + boxWidth > frameWidth) {
+          style.left = frameWidth - boxWidth
+        }
+
+        // if(this.state.popPos === "down"){
+        //   style.top = selectionTop + selectionHeight + gap
+        // }
+       
+        if (style.top < frameTop || this.state.popPos === "down") { // Switch for up/down
+          style.top = selectionTop + selectionHeight + gap
+        }
       }
 
       return style
     }
-
-    let popoverClass = "ctn-pop-outer"    
-    if(this.state.popPos === "up") popoverClass+= " arrow-bottom"
-    else popoverClass+= " arrow-top"
 
     let hoverEmoImg = null
     if(this.state.hoverEmo > 0) {
@@ -439,7 +569,7 @@ export default class ManagerContent extends Component {
         case 2: hoverEmoImg = "assets/emo-2.svg"; break;
         case 3: hoverEmoImg = "assets/emo-3.svg"; break;
         case 4: hoverEmoImg = "assets/emo-4.svg"; break;
-        case 5: hoverEmoImg = "assets/emo-5.svg"; break;
+        default: hoverEmoImg = "assets/emo-5.svg"; break; //case 5
       }
     }
 
@@ -469,23 +599,59 @@ export default class ManagerContent extends Component {
           </div>
         </nav>
         <div className="content">
-          {this.state.showGreeting && <div className="greeting-outer">
-            <div className="greeting-inner">
+          
+          {this.state.notifType === "greeting" && <div className="notif-outer">
+            <div className="notif-inner">
               <img src="assets/sun.svg" alt=""/>
               <div className="title">                
                 Hey {this.state.name}! Let's add some texts today!
               </div>
-              <button className="btn-accent" onClick={this.hideGreeting} type="button">Let's go</button>
+              <button className="btn-accent" onClick={() => this.setNotification("")} type="button">Let's go</button>
               <div className="txt-rem">Texts remaining 15/15</div>
             </div>
           </div>}
-          {!this.state.showGreeting && <div className="content-outer">
-            <div className="container">
-              <div className="ctn-text ctn-source">
-                <img src="assets/link-2.svg" alt=""/>
-                <input type="text" placeholder="Source link"/>
+
+          {this.state.notifType === "submit" && <div className="notif-outer">
+            <div className="notif-inner">
+              <img src="assets/fountain.svg" alt=""/>
+              <div className="title">                
+                Your text has been sent for review successfully.
               </div>
-              <div className="ctn-text ctn-text-main">
+              <button className="btn-accent" onClick={() => this.setNotification("thanks")} type="button">Next</button>              
+              <button className="btn-accent btn-anchor" onClick={() => this.setNotification("")} type="button">Undo</button>              
+            </div>
+          </div>}
+
+          {this.state.notifType === "thanks" && <div className="notif-outer">
+            <div className="notif-inner">
+              <img src="assets/popcorn.svg" alt=""/>
+              <div className="title">                
+                Thanks!<br/> 
+                It's 15 texts today, see you tomorrow for more!
+              </div>              
+              <button className="btn-accent" onClick={() => this.setNotification("")} type="button">Ok</button>              
+            </div>
+          </div>}
+
+          {this.state.notifType === "" && <div className="content-outer">
+            <div className="container">
+              <div className={`ctn-text ctn-source ${this.state.noSource?"error":""}`}>
+                <img src="assets/link-2.svg" alt=""/>
+                <AutoComplete
+                  inputProps={{
+                    className: 'auto-inp source',
+                    placeholder: 'Source link',
+                    value: this.state.source.name
+                  }}
+                  type="sources"
+                  optionSelected={this.sourceAdded}
+                  inputChanged={this.handleSourceChange}
+                  // getCurrSugg={this.handleSuggestions}
+                 />
+              </div>
+
+              <div className="ctn-text ctn-text-main" ref={this.ctnMainRef}>
+
                 <img className="plh" src="assets/align-left.svg" alt=""/>
 
                 <ContentEditable
@@ -495,17 +661,27 @@ export default class ManagerContent extends Component {
                   html={this.state.ceContent} // innerHTML of the editable div                  
                   onChange={this.handleCeChange} // handle innerHTML change
                   onMouseMove={this.handleMouseMove}
-                  onMouseDown={this.handleMouseDown}
+                  // onMouseDown={this.handleMouseDown}
                   onMouseUp={this.handleMouseUp}
+                  onCopy={this.handleCopy}
                   onPaste={this.handlePaste}
+                />
+
+                <SliderX 
+                  className="slider-main"
+                  style={{ display: this.state.ceContent === "" ? "none" : "block"}}
+                  ptq={this.state.pq} 
+                  changePTQ={this.PQChanged} 
+                  title="PQ (Place Quality)"
                 />
 
                 <Popover
                   isOpen={this.state.popOpen}
+                  containerNode={this.ctnMainRef.current}
                   selectionRef={this.contentEditable}
                   placementStrategy={customStrategy}
                 >
-                  <div className={popoverClass} onMouseDown={sp}>
+                  <div onMouseDown={sp} className={`ctn-pop-outer ${this.state.popPos==="up"?"arrow-bottom":"arrow-top"}`}>
                     {this.state.popType === "" && <div className="ctn-btn-empty">
                       <img 
                         onClick={() => this.openPopover({
@@ -551,7 +727,11 @@ export default class ManagerContent extends Component {
                           src="assets/bounds.svg" alt=" "
                         />
                         <div className="ctn-ptq-opt">
-                          <SliderX ptq={this.state.tempSelObj.ptq} changePTQ={this.PTQChanged} />                          
+                          <SliderX 
+                            ptq={this.state.tempSelObj.ptq} 
+                            title="Choose PTQ (Place-tag Quality)"
+                            changePTQ={this.PTQChanged} 
+                          />
                         </div>
                         <button onClick={this.saveSelection} className="btn-accent">Submit</button>
                       </div>}
@@ -568,35 +748,35 @@ export default class ManagerContent extends Component {
                         Choose an emotion
                         <div className="emo-outer">
                           <div 
-                            className={"emo-single " + (this.state.tempSelObj.emotion === 1?"active":"")} 
+                            className={`emo-single ${this.state.tempSelObj.emotion === 1?"active":""}`}
                             onClick={() => this.selectEmoji(1)}
                           >
                             <img src="assets/emo-1.svg" alt=" " className="clr"/>
                             <img src="assets/emo-1-grey.svg" alt=" " className="bw"/>
                           </div>
                           <div 
-                            className={"emo-single " + (this.state.tempSelObj.emotion === 2?"active":"")} 
+                            className={`emo-single ${this.state.tempSelObj.emotion === 2?"active":""}`}
                             onClick={() => this.selectEmoji(2)}
                           >
                             <img src="assets/emo-2.svg" alt=" " className="clr"/>
                             <img src="assets/emo-2-grey.svg" alt=" " className="bw"/>
                           </div>
                           <div 
-                            className={"emo-single " + (this.state.tempSelObj.emotion === 3?"active":"")} 
+                            className={`emo-single ${this.state.tempSelObj.emotion === 3?"active":""}`}
                             onClick={() => this.selectEmoji(3)}
                           >
                             <img src="assets/emo-3.svg" alt=" " className="clr"/>
                             <img src="assets/emo-3-grey.svg" alt=" " className="bw"/>
                           </div>
                           <div 
-                            className={"emo-single " + (this.state.tempSelObj.emotion === 4?"active":"")} 
+                            className={`emo-single ${this.state.tempSelObj.emotion === 4?"active":""}`}
                             onClick={() => this.selectEmoji(4)}
                           >
                             <img src="assets/emo-4.svg" alt=" " className="clr"/>
                             <img src="assets/emo-4-grey.svg" alt=" " className="bw"/>
                           </div>
                           <div 
-                            className={"emo-single " + (this.state.tempSelObj.emotion === 5?"active":"")} 
+                            className={`emo-single ${this.state.tempSelObj.emotion === 5?"active":""}`}
                             onClick={() => this.selectEmoji(5)}
                           >
                             <img src="assets/emo-5.svg" alt=" " className="clr"/>
@@ -604,18 +784,24 @@ export default class ManagerContent extends Component {
                           </div>
                         </div>
                       </div>
-                      <button onClick={this.saveSelection} className="btn-accent">Submit</button>
+                      <button 
+                        onClick={this.saveSelection} 
+                        className="btn-accent"
+                        disabled={this.state.tempSelObj.emotion === 0}
+                      >Submit</button>
+                      {/* <button  */}
+                      {/*   onClick={() => this.selectEmoji(0)}  */}
+                      {/*   className="btn-accent btn-sec" */}
+                      {/* >Clear</button> */}
                     </div>}
 
                   </div>
-                </Popover>
+                </Popover>                
 
-                <div
-                  ref={this.popRef}
-                  className="ctn-pop-hover arrow-bottom"
-                >
-                  {this.state.hoverTagArr.length > 0 && <Tags 
-                    tagArr={this.state.hoverTagArr} 
+                <div className="ctn-pop-hover arrow-bottom" ref={this.popRef}>
+                  {this.state.hoverTagArr.length > 0 && <Tags
+                    tagArr={this.state.hoverTagArr}
+                    ptq={this.state.hoverPtq}
                     addMoreTags={() => this.openPopover({
                       type: "tag", edit: true
                     })}
@@ -627,6 +813,7 @@ export default class ManagerContent extends Component {
                       type: "tag", edit: true, otherChosen: true
                     })} 
                     src="assets/tag-white.svg" alt=" "
+                    style={{ cursor: "pointer" }}
                   />}
 
                   {this.state.hoverEmo > 0 && <img
@@ -644,13 +831,14 @@ export default class ManagerContent extends Component {
                     className="edit"
                     src="assets/emoji.svg" alt=" "           
                   />}
-                </div>               
+                </div>
+
               </div>
             </div>
           </div>}
 
           <div className="ctn-buttons">
-            <button className="btn-accent">Get random text</button>
+            <button className="btn-accent btn-sec">Get random text</button>
             <button className="btn-accent" onMouseDown={this.submit}>Submit</button>
           </div>
         </div>

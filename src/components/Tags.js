@@ -15,10 +15,16 @@ export default class Tags extends Component {
     }) 
   }
 
-  getDisplayName = item => {
+  getDisplayName = (item, i) => {
     let arr = item.split(":")
     , length = arr.length
-    return [arr[length - 2], arr[length - 1]].join(":")
+    , ret = [arr[length - 2], arr[length - 1]].join(":") 
+    , mainLength = this.state.items.length
+    
+    if(i === mainLength - 1 && typeof this.props.ptq !== "undefined")
+      ret+= `, PTQ: ${this.props.ptq}`
+
+    return ret
   }
 
   handleRemove = item => {
@@ -27,15 +33,14 @@ export default class Tags extends Component {
 
   render(){
     return (
-      <ul className="tag-ctn">
+      <ul className="tag-ctn" style={this.props.style}>
         {this.state.items.map((item, i) => {
           let currImg = item.image !== null ? item.image : "assets/tag-plh.png"
-
           return (
             <li key={i}>
               <div>
                 <img className="tag-img"src={currImg} alt="" />
-                <span className="tag-name">{this.getDisplayName(item.full_name)}</span>              
+                <span className="tag-name">{this.getDisplayName(item.full_name, i)}</span>
                 <img className="del-tag" onClick={() => this.handleRemove(item)} src="assets/delete-tag-black.svg" alt="" />              
               </div>
             </li>

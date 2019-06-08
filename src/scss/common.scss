@@ -23,36 +23,6 @@ body{
 ::-webkit-selection {
   background: $cl-high;
 }
-// .error{
-//   color: $w;
-//   background: $err-bg;
-//   font-family: $sp-r;
-//   position: relative;
-//   z-index: 2;
-//   span{
-//     font-weight: 500
-//   }
-// }
-
-// .logged-in{
-//   span{
-//     color: $w;
-//   }
-//   .dropdown-menu{
-//     left: -8rem;
-//   }
-//   .dropdown-toggle{
-//     color: $w !important;
-//     border-left: 1px solid rgba($w, .1);
-//     padding-top: 0.9rem;
-//     padding-left: 1rem !important;
-//     &::after{
-//       border-top: .5em solid;
-//       border-right: .5em solid transparent;
-//       border-left: .5em solid transparent;
-//     }
-//   }
-// }
 
 .btn-accent{
   color: $w;
@@ -67,32 +37,19 @@ body{
   }
 }
 
-// .btn-accent-outline{  
-//   padding: .5rem 1rem;
-//   color: $acc-dark;
-//   background-color: $w;
-//   border-color: $acc-dark;
-//   &:hover{
-//     color: $w;
-//     background-color: $acc-dark;
-//     border-color: $acc-dark;
-//   }
-// }
+.btn-sec{
+  background-color: $btn-sc;
+  &:hover{
+    background-color: darken($btn-sc, 10%);
+  }
+}
 
-// .custom-control-label{
-//   margin-left: .5rem;
-//   color: $sc;
-//   font-size: 17px;
-//   &:before, &:after{
-//     top: .15rem;
-//     width: 1.25rem;
-//     height: 1.25rem;
-//     left: -2rem;
-//   }
-// }
-
-// .custom-control-input:checked~.custom-control-label::before{
-//   color: $w;
-//   border-color: $acc;
-//   background-color: $acc;
-// }
+.btn-anchor{
+  background-color: $w;
+  color: $lgn-pl;
+  box-shadow: none;
+  border: none;
+  &:hover{
+    background-color: $w;    
+  }
+}
