@@ -32,9 +32,7 @@ export default class SliderX extends Component {
     this.state = { ptq: this.props.ptq }
   }
   
-  componentWillReceiveProps = nextProps => {    
-    this.setState({ ptq: nextProps.ptq })
-  }
+  componentWillReceiveProps = nextProps => this.setState({ ptq: nextProps.ptq })
 
   onSliderChange = value => {
     let val = value[0]

@@ -3,10 +3,10 @@
   height: auto;
 	min-height: 100%;
   background: $bg-main;
+  font-family: $sp-r;
 	.navbar{
 	  // z-index: 1;
 	  box-shadow: 0 10px 20px 0 rgba($b, .1);
-	  font-family: $sp-r;
 	  background: $bg-pr;
 	  height: 60px;
 	  padding: 0;
@@ -44,7 +44,6 @@
 			.notif-inner{
 				text-align: center;
 				width: 368px;
-				font-family: $sp-r;
 				.title{
 				  font-size: 36px;
 				  line-height: 1.22;
@@ -82,7 +81,7 @@
 				&.ctn-source{
 					@extend %j-f-s;
 					color: $w;
-					font-family: $sp-r;
+					// font-family: $sp-r;
 					padding-left: 24px;
 					padding-right: 24px;
 					height: 60px;
@@ -141,7 +140,7 @@
 				  	position: relative;				  	
 				  	top: -7px;
 				  	font-size: 19px;
-				  	font-family: $sp-r;
+				  	// font-family: $sp-r;
 				  	width: 100%;
 				  	border: none;
 				  	&::-webkit-input-placeholder { /* Chrome/Opera/Safari */
@@ -167,7 +166,7 @@
 				&.ctn-text-main{
 					position: relative;
 					padding: 70px;
-					font-family: $sp-r;
+					// font-family: $sp-r;
 					.plh{ @include pa(24, 24); }					
 					.ctn-text-content{
 						font-size: 19px;					  
@@ -204,6 +203,21 @@
 				  @include hw(48, 168);
 				  margin-right: 10px;			  	
 			  }
+			}
+		}
+		.txt-err{
+			@include pa(0, 0);
+			@extend %j-s-b;
+			color: $w;
+			height: 60px;
+			width: 100%;
+			padding: 0 25px;
+			font-size: 17px;
+			background: $bg-err;
+			img{
+			  cursor: pointer;
+			  height: 30px;
+			  &:nth-of-type(1){ visibility: hidden; }
 			}
 		}
 	}

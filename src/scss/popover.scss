@@ -68,12 +68,15 @@
           background: rgba($w, .2);         
         }
         .react-autosuggest__suggestions-list{
-          padding: 20px;
-          padding-top: 0;
+          // padding: 20px;
+          // padding-top: 0;
+          padding: 0;
+          padding-left: 10px;
           li.react-autosuggest__suggestion{
             cursor: pointer;
             display: block;
-            margin: 15px 0;
+            // margin: 15px 0;
+            padding: 15px;
             div{
               justify-content: flex-start;
             }
@@ -87,10 +90,14 @@
             &.react-autosuggest__suggestion--first{
               margin-top: 10px;
             }
+            &.react-autosuggest__suggestion--highlighted{
+              background: rgba($bg-auto-high, .4);
+            }
           }
         }
       }
       .auto-inp{
+        // opacity: 0;
         font-family: $sp-r;
         font-size: 17px;
         height: 50px;
@@ -342,5 +349,62 @@ ul.tag-ctn{
     border-left: 1px solid rgba($w, .2);
     // height: 24px;
     cursor: pointer;    
+  }
+}
+
+// For placeholder popover
+.ctn-plh{
+  width: 250px;
+  padding-top: 45px;
+  // min-height: 50px;
+  .plh-sugg-outer{
+    position: relative;
+    max-height: 250px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    width: 100%;
+    // left: -20px;
+    background: $bg-pop;
+    border-top: 1px solid rgba($ctn-auto-bdr, .2);
+    &::-webkit-scrollbar {
+      width: 10px;
+    }      
+    &::-webkit-scrollbar-thumb {
+      border-radius: 5px;         
+      background: rgba($w, .2);         
+    }
+    ul{
+      padding: 0;
+      padding-left: 10px;
+      li{
+        cursor: pointer;
+        display: block;
+        padding: 10px;
+        width: calc(100% - 10px);
+        div{
+          justify-content: flex-start;
+        }
+        &.plh-first{
+          margin-top: 10px;
+        }
+        &:hover, &.plh-highlighted{
+          background: rgba($bg-auto-high, .4);
+        }
+      }
+    }
+    .ctn-no-plh{      
+      text-align: center;
+      padding: 15px 0;
+      position: relative;
+      left: 5.5px;
+    }
+  }  
+  img.close{
+    cursor: pointer;
+    height: 30px;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    z-index: 1;
   }
 }

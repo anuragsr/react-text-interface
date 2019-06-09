@@ -16,6 +16,12 @@ let tmpHtml
 , hoverEl
 , isSelecting = false
 , isEditing = false
+ //For placeholder
+, isTyping = false
+, currPlhStart = 0
+, htmlBeforePlh
+, plhNodeIdx
+, plhAnchorOffset
 
 export default class ManagerContent extends Component {
   constructor(props){
@@ -25,18 +31,24 @@ export default class ManagerContent extends Component {
     this.contentEditable = React.createRef()
     this.ctnMainRef = React.createRef()
     this.popRef = React.createRef()
+    this.plhRef = React.createRef()
     this.http = new HttpService()
     this.state = {
       name: "Yulia",
       username: "yulia@mail.ru",
-      showGreeting: true,
-      notifType: "greeting", // greeting, submit, thanks
-      source: { name: "" },
-      ceContent: "",
-      // ceContent: "Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample. Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample",
+      // notifType: "greeting", // greeting, submit, thanks
+      // source: { name: "" },
+      // ceContent: "",
+      // pq: 0,
+      notifType: "", 
+      source: { name: "the-verge.ru" },
+      ceContent: "Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample. Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample",      
+      pq: 40,
+      noSource: false,
       popPos: "up",
       popOpen: false,
       popType: "",
+      tagStep: 1,
       selTagArr: [],
       selEmoArr: [],
       hoverTagArr: [],
@@ -48,13 +60,31 @@ export default class ManagerContent extends Component {
         emotion: 0, 
         editType: "add"
       },
-      tagStep: 1,
-      pq: 0,
-      noSource: false
+      popPlhOpen: false,
+      plhArr: [],
+      filterPlhArr: [],
+      plhHighIdx: 0,
+      currPlh: "",
+      showTxtErr: false
     }
   }
 
   componentDidMount(){
+    this.http
+    // .get('/api/v1/reviews/placeholders', {})
+    // .get('/api/v1/reviews/placeholders', { query: 'n' }, auth)
+    .get('/api/v1/suggested_tag_for_text', { query: 'n' })
+    .then(res => {
+      l(res)
+      this.setState({ 
+        plhArr: res.data.results,
+        filterPlhArr: res.data.results,
+      })
+    })
+    .catch(err => {
+      l(err)
+    })
+
     $(document).on("mouseenter", ".mark", e => {
       this.showHoverPopover(e)
     })
@@ -238,26 +268,6 @@ export default class ManagerContent extends Component {
     .applyToSelection()    
   }
 
-  closePopover = (e, html) => {
-    // l(this.state.selTagArr, this.state.selEmoArr)
-    this.setState({ 
-      popOpen: false, 
-      tagStep: 1,
-      popPos: "up",
-      popType: "",
-      ceContent: html ? html : this.state.ceContent,
-      tempSelObj: { 
-        ptq: 0, 
-        tagArr: [], 
-        emotion: 0, 
-        editType: "add"
-      },
-    }, () => {      
-      tmpHtml = this.state.ceContent
-      isEditing = false      
-    })
-  }
-
   openPopover = options => {
     // l(hoverSelId, options)
     let tempSelObj = this.state.tempSelObj
@@ -303,6 +313,26 @@ export default class ManagerContent extends Component {
       tempSelObj,
     }, () => {
       hoverSelId = null
+    })
+  }
+
+  closePopover = (e, html) => {
+    // l(this.state.selTagArr, this.state.selEmoArr)
+    this.setState({ 
+      popOpen: false, 
+      tagStep: 1,
+      popPos: "up",
+      popType: "",
+      ceContent: html ? html : this.state.ceContent,
+      tempSelObj: { 
+        ptq: 0, 
+        tagArr: [], 
+        emotion: 0, 
+        editType: "add"
+      },
+    }, () => {      
+      tmpHtml = this.state.ceContent
+      isEditing = false      
     })
   }
 
@@ -475,7 +505,175 @@ export default class ManagerContent extends Component {
     
     this.closePopover(0, $(parent).html())
   }
+  
+  setShowTextErr = showTxtErr => this.setState({ showTxtErr })
 
+  getRandomText = e => {
+    sp(e)
+    this.http
+    .get('/api/v1/random_text', {}, auth)
+    .then(res => {
+      l(res)
+    })
+    .catch(err => {
+      l(err)
+      this.setShowTextErr(true)
+      setTimeout(() => { this.setShowTextErr(false) }, 3000)
+    })
+  }
+
+  handleKeyDown = e => {
+    let key = e.keyCode    
+    if(!isTyping){
+      htmlBeforePlh = $(this.contentEditable.current).html()
+      currPlhStart = rangy.getSelection()
+      l(currPlhStart)
+      
+      let parent = currPlhStart.anchorNode.parentNode
+      
+      plhNodeIdx = [...parent.childNodes].indexOf(currPlhStart.anchorNode)
+      plhAnchorOffset = currPlhStart.anchorOffset
+
+      if(key === 219 && e.shiftKey){ // '{' key
+        isTyping = true        
+        this.setState({ popPlhOpen: true })
+      }
+    }else if(isTyping){
+      // l(key)
+      switch(key){
+        case 38: // Up 
+        case 40: // Down
+          e.preventDefault()
+          e.stopPropagation()
+
+          // Focus on the popover, highlight option
+          let length = this.state.filterPlhArr.length
+          , plhHighIdx = this.state.plhHighIdx
+          
+          if(key === 38){
+            if(plhHighIdx === 0) plhHighIdx = length - 1
+            else plhHighIdx--
+          } else{
+            if(plhHighIdx === length - 1) plhHighIdx = 0
+            else plhHighIdx++          
+          }
+
+          this.setPlhHighIdx(plhHighIdx)
+        break;
+
+        case 17: // Ctrl
+        case 16: // Shift
+        case 13: // Enter
+        case 9: // Tab
+          e.preventDefault()
+          e.stopPropagation()
+
+          l("Ignore")
+          if(key === 13){
+            this.plhAdded(this.state.filterPlhArr[this.state.plhHighIdx])
+          }
+        break;
+
+        case 27: // Escape
+          e.preventDefault()
+          e.stopPropagation()
+
+          l("Reset and close")
+          this.closePlhPopover()
+        break;
+
+        default:
+          // Get typed word
+          let currPlh = this.state.currPlh
+          if(key === 8) { // Backspace
+            currPlh = currPlh.slice(0, -1)
+          } else{          
+            if(e.shiftKey){
+              currPlh+= String.fromCharCode(key)
+            } else{
+              currPlh+= String.fromCharCode(key).toLowerCase()
+            }
+          }
+          // l(currPlh)
+
+          let filterPlhArr = this.state.plhArr.filter(item => 
+            item.name
+            .toLowerCase()
+            .includes(currPlh.toLowerCase())
+          )
+
+          this.setState({ 
+            currPlh,
+            filterPlhArr,
+            plhHighIdx: 0
+          })
+        break;      
+      }
+    }   
+  }
+  
+  setPlhHighIdx = plhHighIdx => this.setState({ plhHighIdx })
+
+  plhAdded = plh => {
+    // l(plh)
+    
+    let el = this.contentEditable.current
+    , currNode = currPlhStart.anchorNode
+    , textContent = currNode.textContent
+    , nodeParts = [
+      textContent.slice(0, currPlhStart.anchorOffset),
+      textContent
+      .slice(currPlhStart.anchorOffset + 1, textContent.length)
+      .replace(this.state.currPlh, ""),
+    ]    
+    
+    currNode.textContent = nodeParts[0] + "{" + plh.name + "} " + nodeParts[1]
+
+    this.setState({ 
+      popPlhOpen: false,
+      filterPlhArr: this.state.plhArr,
+      currPlh: "",
+      plhHighIdx: 0,
+      ceContent: $(el).html()
+    }, () => {
+      let range = document.createRange()
+      , sel = window.getSelection()
+
+      range.setStart(currNode, currPlhStart.focusOffset + plh.name.length + 3)
+      range.collapse(true)
+      sel.removeAllRanges()
+      sel.addRange(range)
+      el.focus()
+      
+      isTyping = false
+    })
+  }
+
+  closePlhPopover = () => {
+    l(htmlBeforePlh, currPlhStart)
+    
+    let el = this.contentEditable.current
+    
+    this.setState({ 
+      popPlhOpen: false,
+      filterPlhArr: this.state.plhArr,
+      currPlh: "",
+      plhHighIdx: 0,
+      ceContent: htmlBeforePlh // Not using tmpHtml because it changes with onchange of contenteditable
+    }, () => {
+      let range = document.createRange()
+      , sel = window.getSelection()
+      
+      range.setStart(el.childNodes[plhNodeIdx], plhAnchorOffset)
+      range.collapse(true)
+      sel.removeAllRanges()
+      sel.addRange(range)
+      el.focus()
+
+      isTyping = false
+    })
+  }
+  
   submit = e => {
     sp(e)
     // l(this.state)
@@ -504,7 +702,7 @@ export default class ManagerContent extends Component {
 
       l(req)
       this.http
-      .post('/api/v1/submit_data', req)
+      .post('/api/v1/submit_data', req, auth)
       .then(res => {
         l(res)
         this.setState({ 
@@ -518,7 +716,7 @@ export default class ManagerContent extends Component {
   }
   
   render(){
-    const customStrategy = ({
+    const placeUpOrDown = ({
       gap,
       frameWidth,
       frameLeft,
@@ -561,6 +759,26 @@ export default class ManagerContent extends Component {
 
       return style
     }
+    , placeDown = ({
+      gap,
+      frameWidth,
+      frameLeft,
+      frameTop,
+      boxHeight,
+      boxWidth,
+      selectionTop,
+      selectionLeft,
+      selectionWidth,
+      selectionHeight
+    }) => {
+      const style = { 
+        position: "fixed",
+        zIndex: 1
+      }
+      style.left = selectionLeft + (selectionWidth / 2) - (boxWidth / 2)
+      style.top = selectionTop + selectionHeight + gap
+      return style
+    }
 
     let hoverEmoImg = null
     if(this.state.hoverEmo > 0) {
@@ -599,6 +817,12 @@ export default class ManagerContent extends Component {
           </div>
         </nav>
         <div className="content">
+          
+          {this.state.showTxtErr && <div className="txt-err">
+            <img src="assets/bounds.svg" alt=" "/>
+            <span>Sorry. We don’t have any random texts at the moment.</span>
+            <img onClick={() => this.setShowTextErr(false)} src="assets/bounds.svg" alt=" "/>
+          </div>}
           
           {this.state.notifType === "greeting" && <div className="notif-outer">
             <div className="notif-inner">
@@ -662,9 +886,10 @@ export default class ManagerContent extends Component {
                   onChange={this.handleCeChange} // handle innerHTML change
                   onMouseMove={this.handleMouseMove}
                   // onMouseDown={this.handleMouseDown}
-                  onMouseUp={this.handleMouseUp}
-                  onCopy={this.handleCopy}
+                  onMouseUp={this.handleMouseUp}                  
                   onPaste={this.handlePaste}
+                  onKeyDown={this.handleKeyDown}
+                  // data-autocomplete-spy
                 />
 
                 <SliderX 
@@ -675,11 +900,12 @@ export default class ManagerContent extends Component {
                   title="PQ (Place Quality)"
                 />
 
+                {/* Popover on Selection */}
                 <Popover
                   isOpen={this.state.popOpen}
                   containerNode={this.ctnMainRef.current}
                   selectionRef={this.contentEditable}
-                  placementStrategy={customStrategy}
+                  placementStrategy={placeUpOrDown}
                 >
                   <div onMouseDown={sp} className={`ctn-pop-outer ${this.state.popPos==="up"?"arrow-bottom":"arrow-top"}`}>
                     {this.state.popType === "" && <div className="ctn-btn-empty">
@@ -798,6 +1024,7 @@ export default class ManagerContent extends Component {
                   </div>
                 </Popover>                
 
+                {/* Popover on hover */}
                 <div className="ctn-pop-hover arrow-bottom" ref={this.popRef}>
                   {this.state.hoverTagArr.length > 0 && <Tags
                     tagArr={this.state.hoverTagArr}
@@ -833,12 +1060,48 @@ export default class ManagerContent extends Component {
                   />}
                 </div>
 
+                {/* Popover for placeholder */}
+                <Popover
+                  isOpen={this.state.popPlhOpen}
+                  containerNode={this.ctnMainRef.current}
+                  selectionRef={this.contentEditable}
+                  placementStrategy={placeDown}
+                >
+                  <div className="ctn-pop-outer arrow-top">
+                    <div className="ctn-plh">
+                      <div className="plh-sugg-outer">
+                        {this.state.filterPlhArr.length > 0 && <ul>{
+                          this.state.filterPlhArr
+                          .map((item, i) => {
+                            return (<li 
+                              key={i} 
+                              onClick={() => this.plhAdded(item)}
+                              onMouseOver={() => this.setPlhHighIdx(i)}
+                              className={`${this.state.plhHighIdx === i?"plh-highlighted":""}`}
+                              >
+                              <div>{item.name}</div>
+                            </li>)
+                          })
+                        }</ul>}
+
+                        {this.state.filterPlhArr.length === 0 && <div className="ctn-no-plh">
+                          No matching placeholders
+                        </div>}
+                      </div>
+                      <img 
+                        onClick={this.closePlhPopover} 
+                        className="close"
+                        src="assets/bounds.svg" alt=" "
+                      />
+                    </div>                    
+                  </div>
+                </Popover>
               </div>
             </div>
           </div>}
 
           <div className="ctn-buttons">
-            <button className="btn-accent btn-sec">Get random text</button>
+            <button className="btn-accent btn-sec" onMouseDown={this.getRandomText}>Get random text</button>
             <button className="btn-accent" onMouseDown={this.submit}>Submit</button>
           </div>
         </div>

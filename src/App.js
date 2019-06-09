@@ -19,7 +19,6 @@ export default class App extends Component {
       password: "",
       isAuth: false,
       showErr: false,
-      perm: []
     }
   }
 
@@ -89,7 +88,6 @@ export default class App extends Component {
     cookies.remove("text_int_con")
     this.setState({ 
       isAuth: false,
-      perm: [],
       username: "",
       password: ""
     })

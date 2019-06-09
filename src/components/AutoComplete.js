@@ -48,7 +48,8 @@ export default class AutoComplete extends Component {
     if(this.props.type === "tag"){
       url = '/api/v1/tags'
     }else if(this.props.type === "placeholder"){
-      url = '/api/v1/reviews/placeholders'
+      // url = '/api/v1/reviews/placeholders'
+      url = '/api/v1/suggested_tag_for_text'
     }else if(this.props.type === "sources"){
       url = '/api/v1/sources'
     }
@@ -62,7 +63,7 @@ export default class AutoComplete extends Component {
 
       if(this.props.type === "tag"){
         suggestions = currRes.filter(x => x.full_name.toLowerCase().includes(value.toLowerCase()))      
-      }else if(this.props.type === "placeholders"){
+      }else if(this.props.type === "placeholder"){
         suggestions = currRes.filter(x => x.name.toLowerCase().includes(value.toLowerCase()))      
       }else if(this.props.type === "sources"){
         suggestions = currRes.filter(x => x.name.toLowerCase().includes(value.toLowerCase()))      
@@ -113,9 +114,9 @@ export default class AutoComplete extends Component {
   render() {
     const { value, suggestions } = this.state
     const inputProps = this.props.inputProps
-   
+        
     inputProps.value = value
-    inputProps.onChange = this.onChange
+    inputProps.onChange = this.onChange    
 
     return (
       <div>

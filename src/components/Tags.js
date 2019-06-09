@@ -27,9 +27,7 @@ export default class Tags extends Component {
     return ret
   }
 
-  handleRemove = item => {
-    this.props.removeTag(item)
-  }
+  handleRemove = item => this.props.removeTag(item)  
 
   render(){
     return (
