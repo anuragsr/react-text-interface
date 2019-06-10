@@ -30,12 +30,12 @@ export default class App extends Component {
         password: ck.x_p
       }, this.login)
     }
-    else{
-      this.setState({
-        username: 'contenter',
-        password: 'ExXgB6QjfQUwyMm7gcEd'
-      }, this.login)
-    }
+    // else{
+    //   this.setState({
+    //     username: 'contenter',
+    //     password: 'ExXgB6QjfQUwyMm7gcEd'
+    //   }, this.login)
+    // }
   }
 
   handleInputChange = event => {
@@ -57,8 +57,6 @@ export default class App extends Component {
     .then(res => {
       l(res)
 
-      this.setState({ isAuth: true })
-
       // Set auth user
       auth.username = this.state.username
       auth.password = this.state.password
@@ -70,7 +68,10 @@ export default class App extends Component {
           x_p: auth.password
         }, { maxAge: 3600 })
       }
-      // l(auth)
+      l(auth)
+
+      this.setState({ isAuth: true })
+
     })
     .catch(err => {
       l(err)
@@ -102,8 +103,8 @@ export default class App extends Component {
             <div className="login-box">
               <form onSubmit={this.login}>
                 <div className="login-content">
-                  <img src="assets/pino.svg" alt=""/>
-                  <div className="heading">Welcome to Pino!</div>
+                  <img src="assets/steakhouse.svg" alt=""/>
+                  <div className="heading">Welcome to Project!</div>
                     <input name="username" value={this.state.username} onChange={this.handleInputChange} placeholder="Login" type="text"/>
                     <input name="password" value={this.state.password} onChange={this.handleInputChange} placeholder="Password" type="password"/>
                     <button className="btn-accent" type="submit">Sign in</button>

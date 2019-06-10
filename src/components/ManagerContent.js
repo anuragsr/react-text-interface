@@ -19,9 +19,9 @@ let tmpHtml
  //For placeholder
 , isTyping = false
 , currPlhStart = 0
-, htmlBeforePlh
-, plhNodeIdx
-, plhAnchorOffset
+// , htmlBeforePlh
+// , plhNodeIdx
+// , plhAnchorOffset
 
 export default class ManagerContent extends Component {
   constructor(props){
@@ -36,18 +36,19 @@ export default class ManagerContent extends Component {
     this.state = {
       name: "Yulia",
       username: "yulia@mail.ru",
-      // notifType: "greeting", // greeting, submit, thanks
-      // source: { name: "" },
-      // ceContent: "",
-      // pq: 0,
-      notifType: "", 
-      source: { name: "the-verge.ru" },
-      ceContent: "Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample. Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample",      
-      pq: 40,
+      notifType: "", // "", greeting, submit, thanks
+      source: { name: "" },
+      ceContent: "",
+      pq: 0,
+      // notifType: "", 
+      // source: { name: "the-verge.ru" },
+      // ceContent: "Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample. Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample",      
+      // pq: 40,
       noSource: false,
       popPos: "up",
       popOpen: false,
       popType: "",
+      suggTags: [],
       tagStep: 1,
       selTagArr: [],
       selEmoArr: [],
@@ -71,15 +72,19 @@ export default class ManagerContent extends Component {
 
   componentDidMount(){
     this.http
-    // .get('/api/v1/reviews/placeholders', {})
-    // .get('/api/v1/reviews/placeholders', { query: 'n' }, auth)
-    .get('/api/v1/suggested_tag_for_text', { query: 'n' })
+    .get('/api/v1/reviews/placeholders', {}, auth)
+    // .get('/api/v1/suggested_tag_for_text', { query: 'n' })
     .then(res => {
       l(res)
       this.setState({ 
-        plhArr: res.data.results,
-        filterPlhArr: res.data.results,
+        plhArr: res.data.placeholders,
+        filterPlhArr: res.data.placeholders,
       })
+
+      // this.setState({ 
+      //   plhArr: res.data.results,
+      //   filterPlhArr: res.data.results,
+      // })
     })
     .catch(err => {
       l(err)
@@ -251,13 +256,28 @@ export default class ManagerContent extends Component {
       tempSelObj.start =  currSel.anchorOffset
       tempSelObj.end   =  currSel.focusOffset - 1
 
-      this.setState({ 
-        tempSelObj,
-        popOpen: true,
-      }, () => {
-        this.highlightSelection(currSel.getRangeAt(0))
-        // currSel.removeAllRanges() /* Not needed because user can't copy-paste */
+      // Get suggested keywords for selected text
+      this.http
+      .get('/api/v1/suggested_tag_for_text', { query: tempSelObj.text })
+      .then(res => {
+        // l(res)
+        let suggTags = []
+        if(res.data.results){
+          suggTags = res.data.results
+        }
+
+        this.setState({ 
+          suggTags,
+          tempSelObj,
+          popOpen: true,
+        }, () => {
+          this.highlightSelection(currSel.getRangeAt(0))
+          // currSel.removeAllRanges() /* Not needed because user can't copy-paste */
+        })
       })
+      .catch(err => {
+        l(err)
+      })        
     }
   }
 
@@ -335,7 +355,7 @@ export default class ManagerContent extends Component {
       isEditing = false      
     })
   }
-
+  
   tagAdded = tag => {
     let tempSelObj = this.state.tempSelObj
     , tempTagArr = tempSelObj.tagArr
@@ -355,7 +375,8 @@ export default class ManagerContent extends Component {
     hoverTagArr = tempSelObj.tagArr.filter(s => s.id !== tag.id)
     tempSelObj.tagArr = hoverTagArr
 
-    if(hoverTagArr.length) this.setState({ tempSelObj, hoverTagArr }) 
+    if(!hoverSelId) this.setState({ tempSelObj, hoverTagArr, tagStep: 1 })
+    else if(hoverTagArr.length) this.setState({ tempSelObj, hoverTagArr }) 
     else {
       let emoArr = this.state.selEmoArr.filter(s => s.selId === hoverSelId)
       , selTagArr = this.state.selTagArr.filter(s => s.selId !== hoverSelId)
@@ -507,35 +528,56 @@ export default class ManagerContent extends Component {
   }
   
   setShowTextErr = showTxtErr => this.setState({ showTxtErr })
+  
+  showTextErr = () => {
+    this.setShowTextErr(true)
+    setTimeout(() => { this.setShowTextErr(false) }, 3000)
+  }
 
   getRandomText = e => {
     sp(e)
     this.http
-    .get('/api/v1/random_text', {}, auth)
+    .get('/api/v1/get_text', { type: "original" }, auth)
     .then(res => {
-      l(res)
+      if(res.data.text){        
+        this.setState({
+          ceContent: res.data.text
+        })
+      } else this.showTextErr()
     })
     .catch(err => {
       l(err)
-      this.setShowTextErr(true)
-      setTimeout(() => { this.setShowTextErr(false) }, 3000)
+      this.showTextErr()
     })
+  }
+
+  scrollParentToChild = (parent, child) => {
+    // Where is the parent on page
+    let parentRect = parent.getBoundingClientRect()
+    // What can you see?
+    , parentViewableArea = {
+      height: parent.clientHeight,
+      width: parent.clientWidth
+    }
+    // Where is the child
+    , childRect = child.getBoundingClientRect()
+    // Is the child viewable?
+    , isViewable = (childRect.top >= parentRect.top) && (childRect.top <= parentRect.top + parentViewableArea.height - 50);
+
+    // if you can't see the child try to scroll parent
+    if (!isViewable) {
+      // scroll by offset relative to parent
+      parent.scrollTop = (childRect.top + parent.scrollTop) - parentRect.top
+    }
   }
 
   handleKeyDown = e => {
     let key = e.keyCode    
     if(!isTyping){
-      htmlBeforePlh = $(this.contentEditable.current).html()
-      currPlhStart = rangy.getSelection()
-      l(currPlhStart)
-      
-      let parent = currPlhStart.anchorNode.parentNode
-      
-      plhNodeIdx = [...parent.childNodes].indexOf(currPlhStart.anchorNode)
-      plhAnchorOffset = currPlhStart.anchorOffset
-
       if(key === 219 && e.shiftKey){ // '{' key
         isTyping = true        
+        currPlhStart = rangy.getSelection()
+        // l(currPlhStart)
         this.setState({ popPlhOpen: true })
       }
     }else if(isTyping){
@@ -558,19 +600,22 @@ export default class ManagerContent extends Component {
             else plhHighIdx++          
           }
 
-          this.setPlhHighIdx(plhHighIdx)
+          this.setPlhHighIdx(plhHighIdx)                  
         break;
 
         case 17: // Ctrl
         case 16: // Shift
         case 13: // Enter
-        case 9: // Tab
+        case 9:  // Tab
           e.preventDefault()
           e.stopPropagation()
 
           l("Ignore")
           if(key === 13){
-            this.plhAdded(this.state.filterPlhArr[this.state.plhHighIdx])
+            this.processPlhInput({
+              plh: this.state.filterPlhArr[this.state.plhHighIdx],
+              type: "add"
+            })
           }
         break;
 
@@ -578,8 +623,7 @@ export default class ManagerContent extends Component {
           e.preventDefault()
           e.stopPropagation()
 
-          l("Reset and close")
-          this.closePlhPopover()
+          this.processPlhInput({ type: "remove" })
         break;
 
         default:
@@ -595,9 +639,9 @@ export default class ManagerContent extends Component {
             }
           }
           // l(currPlh)
-
           let filterPlhArr = this.state.plhArr.filter(item => 
-            item.name
+            item
+            // item.name
             .toLowerCase()
             .includes(currPlh.toLowerCase())
           )
@@ -612,22 +656,43 @@ export default class ManagerContent extends Component {
     }   
   }
   
-  setPlhHighIdx = plhHighIdx => this.setState({ plhHighIdx })
+  setPlhHighIdx = plhHighIdx => {
+    this.setState({ plhHighIdx }, () => {
+      this.scrollParentToChild($(".plh-sugg-outer")[0], $(".plh-highlighted")[0])      
+    })
+  }
 
-  plhAdded = plh => {
-    // l(plh)
+  processPlhInput = options => {
+    // l(options)
+    // l("Placeholder selected")
     
     let el = this.contentEditable.current
     , currNode = currPlhStart.anchorNode
     , textContent = currNode.textContent
+    , currPlh = this.state.currPlh
     , nodeParts = [
       textContent.slice(0, currPlhStart.anchorOffset),
       textContent
       .slice(currPlhStart.anchorOffset + 1, textContent.length)
-      .replace(this.state.currPlh, ""),
-    ]    
-    
-    currNode.textContent = nodeParts[0] + "{" + plh.name + "} " + nodeParts[1]
+      .replace(currPlh, ""),
+    ] 
+    , plh
+
+    if(options.type === "add") { // Add text from list or user input
+      plh = options.plh    
+      if(plh) {
+        if(options.isClick){
+          currNode.textContent = nodeParts[0] + plh.slice(1, plh.length - 1) + "} " + nodeParts[1]
+        } else{          
+          currNode.textContent = nodeParts[0] + plh + " " + nodeParts[1]
+          // currNode.textContent = nodeParts[0] + "{" + plh.name + "} " + nodeParts[1]
+        }
+      } else {
+        currNode.textContent = nodeParts[0] + "{" + currPlh + "} " + nodeParts[1]
+      }
+    } else { // Restore original
+      currNode.textContent = nodeParts[0] + nodeParts[1]
+    } 
 
     this.setState({ 
       popPlhOpen: false,
@@ -639,37 +704,30 @@ export default class ManagerContent extends Component {
       let range = document.createRange()
       , sel = window.getSelection()
 
-      range.setStart(currNode, currPlhStart.focusOffset + plh.name.length + 3)
+      if(options.type === "add") {
+        try{
+          if(plh) {
+            if(options.isClick){
+              range.setStart(currNode, currPlhStart.focusOffset + plh.length)
+            } else{              
+              range.setStart(currNode, currPlhStart.focusOffset + plh.length + 1)
+              // range.setStart(currNode, currPlhStart.focusOffset + plh.name.length + 3)
+            }
+          } else{
+            range.setStart(currNode, currPlhStart.focusOffset + currPlh.length + 3)        
+          }
+        }catch(err){
+          // l(err)
+        }
+      } else {
+        range.setStart(currNode, currPlhStart.focusOffset)        
+      }
+
       range.collapse(true)
       sel.removeAllRanges()
       sel.addRange(range)
       el.focus()
       
-      isTyping = false
-    })
-  }
-
-  closePlhPopover = () => {
-    l(htmlBeforePlh, currPlhStart)
-    
-    let el = this.contentEditable.current
-    
-    this.setState({ 
-      popPlhOpen: false,
-      filterPlhArr: this.state.plhArr,
-      currPlh: "",
-      plhHighIdx: 0,
-      ceContent: htmlBeforePlh // Not using tmpHtml because it changes with onchange of contenteditable
-    }, () => {
-      let range = document.createRange()
-      , sel = window.getSelection()
-      
-      range.setStart(el.childNodes[plhNodeIdx], plhAnchorOffset)
-      range.collapse(true)
-      sel.removeAllRanges()
-      sel.addRange(range)
-      el.focus()
-
       isTyping = false
     })
   }
@@ -841,7 +899,7 @@ export default class ManagerContent extends Component {
               <div className="title">                
                 Your text has been sent for review successfully.
               </div>
-              <button className="btn-accent" onClick={() => this.setNotification("thanks")} type="button">Next</button>              
+              <button className="btn-accent" onClick={() => this.setNotification("")} type="button">Next</button>              
               <button className="btn-accent btn-anchor" onClick={() => this.setNotification("")} type="button">Undo</button>              
             </div>
           </div>}
@@ -937,7 +995,18 @@ export default class ManagerContent extends Component {
                         onClick={e => this.closePopover(e, tmpHtml)} 
                         className="close"
                         src="assets/bounds.svg" alt=" "
-                      />}
+                      />}                      
+                      {this.state.tagStep === 1 && 
+                        this.state.suggTags.length > 0 && <div className="ctn-sugg">
+                        <div className="sugg-title">
+                          Suggested Tags:
+                        </div>
+                        <Tags 
+                          isSuggested={true}
+                          tagArr={this.state.suggTags} 
+                          suggestTag={this.tagAdded}                          
+                        />
+                      </div>}
                       
                       {this.state.tagStep === 2 && <div className="ctn-ptq">
                         <div className="ctn-tags-chosen">
@@ -1075,11 +1144,14 @@ export default class ManagerContent extends Component {
                           .map((item, i) => {
                             return (<li 
                               key={i} 
-                              onClick={() => this.plhAdded(item)}
+                              onClick={() => this.processPlhInput({
+                                plh: item, type: "add", isClick: true
+                              })}
                               onMouseOver={() => this.setPlhHighIdx(i)}
                               className={`${this.state.plhHighIdx === i?"plh-highlighted":""}`}
                               >
-                              <div>{item.name}</div>
+                              {/* <div>{item.name}</div> */}
+                              <div>{item}</div>
                             </li>)
                           })
                         }</ul>}
@@ -1088,11 +1160,11 @@ export default class ManagerContent extends Component {
                           No matching placeholders
                         </div>}
                       </div>
-                      <img 
-                        onClick={this.closePlhPopover} 
-                        className="close"
-                        src="assets/bounds.svg" alt=" "
-                      />
+                      {/* <img  */}
+                      {/*   onClick={() => this.processPlhInput({ type: "remove" })} */}
+                      {/*   className="close" */}
+                      {/*   src="assets/bounds.svg" alt=" " */}
+                      {/* /> */}
                     </div>                    
                   </div>
                 </Popover>

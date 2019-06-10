@@ -17,22 +17,24 @@ export default class AutoComplete extends Component {
   getSuggestionValue = suggestion => {
     if(this.props.type === "tag"){
       return suggestion.full_name
-    }else if(this.props.type === "placeholder"){
-      return suggestion.name
     }else if(this.props.type === "sources"){
       return suggestion.name
     }
+    // else if(this.props.type === "placeholder"){
+    //   return suggestion.name
+    // }
   }
   
   renderSuggestion = (suggestion, { query }) => {
     let suggestionText
     if(this.props.type === "tag"){
       suggestionText = `${suggestion.full_name}`
-    }else if(this.props.type === "placeholder"){
-      suggestionText = `${suggestion.name}`    
     }else if(this.props.type === "sources"){
       suggestionText = `${suggestion.name}`    
     }
+    // else if(this.props.type === "placeholder"){
+    //   suggestionText = `${suggestion.name}`    
+    // }
 
     return (
       <div>{ suggestionText }</div>
@@ -47,28 +49,30 @@ export default class AutoComplete extends Component {
 
     if(this.props.type === "tag"){
       url = '/api/v1/tags'
-    }else if(this.props.type === "placeholder"){
-      // url = '/api/v1/reviews/placeholders'
-      url = '/api/v1/suggested_tag_for_text'
     }else if(this.props.type === "sources"){
       url = '/api/v1/sources'
     }
+    // else if(this.props.type === "placeholder"){
+    //   // url = '/api/v1/reviews/placeholders'
+    //   url = '/api/v1/suggested_tag_for_text'
+    // }
 
     this.http
     .get(url, params, auth)
     .then(res => {
       const currRes = res.data.results
       let suggestions      
-      // l("Total API Results:", currRes)
+      l("Total API Results:", currRes)
 
       if(this.props.type === "tag"){
         suggestions = currRes.filter(x => x.full_name.toLowerCase().includes(value.toLowerCase()))      
-      }else if(this.props.type === "placeholder"){
-        suggestions = currRes.filter(x => x.name.toLowerCase().includes(value.toLowerCase()))      
       }else if(this.props.type === "sources"){
         suggestions = currRes.filter(x => x.name.toLowerCase().includes(value.toLowerCase()))      
       }
-      // l("Results containing current query:", suggestions)
+      // else if(this.props.type === "placeholder"){
+      //   suggestions = currRes.filter(x => x.name.toLowerCase().includes(value.toLowerCase()))      
+      // }
+      l("Results containing current query:", suggestions)
 
       // To set filtered options 
       // this.setState({ suggestions })

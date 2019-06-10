@@ -39,7 +39,8 @@
   .ctn-pop-inner{
     width: 400px;
     min-height: 50px;
-    &.ctn-tag{      
+    &.ctn-tag{
+      // Autocomplete
       &>div, .react-autosuggest__container{
         position: relative;
         width: 100%;
@@ -130,6 +131,18 @@
         top: 10px;
         z-index: 1;
       }
+
+      // Suggested Tags
+      .ctn-sugg{
+        font-size: 17px;        
+        border-top: 1px solid rgba($ctn-auto-bdr, .2);
+        padding: 20px;
+        .sugg-title{
+          margin-bottom: 10px;
+        }
+      }
+
+      // Main tags and ptq box
       .ctn-ptq{
         padding: 6px;
         position: relative;
@@ -355,17 +368,18 @@ ul.tag-ctn{
 // For placeholder popover
 .ctn-plh{
   width: 250px;
-  padding-top: 45px;
+  // padding-top: 45px;
   // min-height: 50px;
   .plh-sugg-outer{
     position: relative;
-    max-height: 250px;
+    // max-height: 250px;
+    max-height: 240px;
     overflow-y: scroll;
     overflow-x: hidden;
     width: 100%;
     // left: -20px;
     background: $bg-pop;
-    border-top: 1px solid rgba($ctn-auto-bdr, .2);
+    // border-top: 1px solid rgba($ctn-auto-bdr, .2);
     &::-webkit-scrollbar {
       width: 10px;
     }      
@@ -384,8 +398,8 @@ ul.tag-ctn{
         div{
           justify-content: flex-start;
         }
-        &.plh-first{
-          margin-top: 10px;
+        &:nth-of-type(1){
+          margin-top: 15px;
         }
         &:hover, &.plh-highlighted{
           background: rgba($bg-auto-high, .4);
