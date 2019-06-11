@@ -17,13 +17,12 @@ let tmpHtml
 , hoverEl
 , isSelecting = false
 , isEditing = false
+, createInside = false
  //For placeholder
 , isTyping = false
 , currPlhStart
-// , currSel
-// , htmlBeforePlh
-// , plhNodeIdx
-// , plhAnchorOffset
+// To remove span completely on backspace
+, mutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver
 
 export default class ManagerContent extends Component {
   constructor(props){
@@ -76,24 +75,18 @@ export default class ManagerContent extends Component {
   componentDidMount(){
     this.http
     .get('/api/v1/reviews/placeholders', {}, auth)
-    // .get('/api/v1/suggested_tag_for_text', { query: 'n' })
     .then(res => {
       // l(res)
       this.setState({ 
         plhArr: res.data.placeholders,
         filterPlhArr: res.data.placeholders,
       })
-
-      // this.setState({ 
-      //   plhArr: res.data.results,
-      //   filterPlhArr: res.data.results,
-      // })
     })
     .catch(err => {
       l(err)
     })
 
-    $(document).on("mouseenter", ".mark", e => {
+    $(document).on("mouseenter mouseup", ".mark", e => {  
       this.showHoverPopover(e)
     })
 
@@ -228,11 +221,12 @@ export default class ManagerContent extends Component {
   }
 
   handleCeChange = evt => {
-    let val = evt.target.value
+    let parent = $(this.contentEditable.current)
+    , val = evt.target.value
+
     if(val === "<br>" || val === "<div><br></div>") val = ""
     this.setState({ ceContent: val }, () => {
-      let parent = this.contentEditable.current
-      tmpHtml = $(parent).html()
+      tmpHtml = parent.html()      
     })
   }
 
@@ -241,7 +235,10 @@ export default class ManagerContent extends Component {
     document.execCommand('insertHTML', false, e.clipboardData.getData('text/plain'))
   }
 
-  handleMouseMove = e => isSelecting = rangy.getSelection().toString().length > 0
+  handleMouseMove = e => {
+    isSelecting = rangy.getSelection().toString().length > 0 
+    if(isSelecting) this.hideHoverPopover()
+  }
 
   handleMouseDownOutside = e => {
     // l("Mouse Down outside")
@@ -273,20 +270,17 @@ export default class ManagerContent extends Component {
   }
 
 //   handleMouseDown = e => {
-//     // l("Mouse Down on contenteditable")
-//     // sp(e)
-//     // this.setState({ 
-//     //   showCreateSource: false
-//     // })
-//     // if(currSel) currSel.removeAllRanges() 
+//     l("Mouse Down on contenteditable")
+//     sp(e)
+//     this.setState({ 
+//       showCreateSource: false
+//     })
+//     if(currSel) currSel.removeAllRanges() 
 // 
-//     // this.closePopover(0, tmpHtml)
+//     this.closePopover(0, tmpHtml)
 //   }
 
-  handleMouseUp = e => {
-    // hoverEl = $(e.target)
-    // if(!hoverEl.hasClass("mark")) hoverEl = null    
-    
+  handleMouseUp = e => {    
     hoverEl = null    
 
     // Preserving html in case no tags added
@@ -298,6 +292,11 @@ export default class ManagerContent extends Component {
     , selText = currSel.toString()
 
     if(selText.length){
+
+      // l(e.target)
+      if($(e.target).hasClass("mark")) createInside = true      
+      else createInside = false
+
       let tempSelObj = this.state.tempSelObj      
       tempSelObj.selId =  rand(5)
       tempSelObj.text  =  selText.replace(/\[|\]/g, '')
@@ -307,7 +306,6 @@ export default class ManagerContent extends Component {
       this.setState({ 
         tempSelObj,
         popOpen: true,
-        // popOpen: selText.length ? true : false,
       }, () => {
         this.highlightSelection(currSel.getRangeAt(0))
         // currSel.removeAllRanges() // Not needed because user can't copy-paste 
@@ -329,6 +327,7 @@ export default class ManagerContent extends Component {
       .catch(err => {
         l(err)
       }) 
+
     } else{
       this.setState({ popOpen: false })
     }
@@ -407,7 +406,7 @@ export default class ManagerContent extends Component {
       showCreateSource: false    
     }, () => {
       tmpHtml = this.state.ceContent
-      isEditing = false      
+      isEditing = false
     })
   }
   
@@ -542,17 +541,19 @@ export default class ManagerContent extends Component {
       default: //case "emoji"
         switch(tempSelObj.editType){
           case "add": 
-            let noCreate = !!tempSelObj.noCreate            
-            delete tempSelObj.type
-            delete tempSelObj.editType
-            delete tempSelObj.tagArr
-            delete tempSelObj.ptq
-            delete tempSelObj.noCreate
+            if(tempSelObj.emotion > 0){            
+              let noCreate = !!tempSelObj.noCreate            
+              delete tempSelObj.type
+              delete tempSelObj.editType
+              delete tempSelObj.tagArr
+              delete tempSelObj.ptq
+              delete tempSelObj.noCreate
 
-            selEmoArr = this.state.selEmoArr
-            selEmoArr.push(tempSelObj)
-            if(noCreate) this.setState({ selEmoArr }, this.closePopover)
-            else this.setState({ selEmoArr }, this.createSelectionArea)
+              selEmoArr = this.state.selEmoArr
+              selEmoArr.push(tempSelObj)
+              if(noCreate) this.setState({ selEmoArr }, this.closePopover)
+              else this.setState({ selEmoArr }, this.createSelectionArea)
+            } else this.closePopover()
           break;
 
           default: //case "edit"
@@ -606,21 +607,72 @@ export default class ManagerContent extends Component {
   }
 
   createSelectionArea = () => {
-    let parent = this.contentEditable.current
-    , selEl = $(parent).find(`[selid="${this.state.tempSelObj.selId}"]`)
+    let parent = $(this.contentEditable.current)
+    , selEl = parent.find(`[selid="${this.state.tempSelObj.selId}"]`)
 
     selEl
     .removeClass("highlight")
     .addClass("mark")
 
-    if(selEl.length > 1){
+    if(selEl.length > 1){ // Tag outside tag
       $(selEl[0]).html("[" + $(selEl[0]).html())
       $(selEl[selEl.length - 1]).html($(selEl[selEl.length - 1]).html() + "]")
     }else{
-      selEl.html("[" + selEl.html() + "]")
+      if(createInside){ // Tag inside tag
+        let tempParent = selEl.parent()
+        , childNodes = tempParent[0].childNodes
+        
+        // l(selEl, tempParent, childNodes)
+
+        let tempStr = ""
+        tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[0].textContent}</span>`
+        tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">`
+        
+        if(childNodes[2]){
+          tempStr+=   `<span selid="${tempParent.attr("selid")}" class="mark">[${childNodes[1].textContent}]</span>`
+          tempStr+= `</span>`
+          tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[2].textContent}</span>`
+        } else {
+          tempStr+=   `<span selid="${tempParent.attr("selid")}" class="mark">[${childNodes[1].textContent}</span>`
+          tempStr+= `</span>`
+          tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">]</span>`          
+        }
+
+        tempParent.replaceWith(tempStr)
+      } else{  // Single tag      
+        selEl.html("[" + selEl.html() + "]")
+      }
     }      
-    
-    this.closePopover(0, $(parent).html())
+        
+    // Attach MutationObserver to created spans, so we can delete them later by backspace
+    let config = { childList: true, characterData: true, characterDataOldValue:true, subtree: true }
+    , targets = parent.find("span.mark").toArray() // To observe all elements, even previous
+    // , targets = selEl.toArray()
+
+    targets.forEach(target => {
+      new mutationObserver(mutations => {
+        mutations.forEach(mutation => {
+          if (mutation.type === 'characterData' && !isSelecting) {
+            let newValue = mutation.target.textContent.replace(/\[|\]/g, '')
+            l('old:', mutation.oldValue, 'new:', newValue)
+            if(newValue === ""){
+              $(mutation.target).remove()
+              let sel = window.getSelection()
+              , range = sel.getRangeAt(0)
+
+              range.collapse(false)
+              sel.removeAllRanges()
+              sel.addRange(range)
+            }
+          }
+        })
+      })
+      .observe(target, config)
+    })
+
+    rangy.getSelection().removeAllRanges()    
+
+    this.closePopover(0, parent.html())
   }
   
   setShowTextErr = showTxtErr => this.setState({ showTxtErr })
@@ -725,7 +777,7 @@ export default class ManagerContent extends Component {
         default:
           // Get typed word
           let currPlh = this.state.currPlh
-          if(key === 8) { // Backspace
+          if(key === 8) { // Backspace            
             currPlh = currPlh.slice(0, -1)
           } else{          
             if(e.shiftKey){
@@ -1048,7 +1100,6 @@ export default class ManagerContent extends Component {
                   onMouseUp={this.handleMouseUp}                  
                   onPaste={this.handlePaste}
                   onKeyDown={this.handleKeyDown}
-                  // data-autocomplete-spy
                 />
 
                 <SliderX 
