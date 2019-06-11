@@ -12,13 +12,15 @@ import HttpService from '../services/HttpService'
 import { l, cl, auth, rand, sp } from '../helpers/common'
 
 let tmpHtml
+, suggTags = []
 , hoverSelId
 , hoverEl
 , isSelecting = false
 , isEditing = false
  //For placeholder
 , isTyping = false
-, currPlhStart = 0
+, currPlhStart
+// , currSel
 // , htmlBeforePlh
 // , plhNodeIdx
 // , plhAnchorOffset
@@ -38,6 +40,7 @@ export default class ManagerContent extends Component {
       username: "yulia@mail.ru",
       notifType: "", // "", greeting, submit, thanks
       source: { name: "" },
+      suggSources: [],      
       ceContent: "",
       pq: 0,
       // notifType: "", 
@@ -48,8 +51,8 @@ export default class ManagerContent extends Component {
       popPos: "up",
       popOpen: false,
       popType: "",
-      suggTags: [],
       tagStep: 1,
+      suggTags: [],
       selTagArr: [],
       selEmoArr: [],
       hoverTagArr: [],
@@ -75,7 +78,7 @@ export default class ManagerContent extends Component {
     .get('/api/v1/reviews/placeholders', {}, auth)
     // .get('/api/v1/suggested_tag_for_text', { query: 'n' })
     .then(res => {
-      l(res)
+      // l(res)
       this.setState({ 
         plhArr: res.data.placeholders,
         filterPlhArr: res.data.placeholders,
@@ -105,6 +108,8 @@ export default class ManagerContent extends Component {
         this.hideHoverPopover()
       }
     })
+
+    // this.getRandomText()
   }
 
   componentDidUpdate(){
@@ -134,11 +139,13 @@ export default class ManagerContent extends Component {
       hoverSelId = selid
       hoverEl = el
 
-      this.setState({
+      let tempState = {
         hoverTagArr: selTagArr.length ? selTagArr[0].tagArr: [],
         hoverPtq: selTagArr.length ? selTagArr[0].ptq: 0,
         hoverEmo: selEmoArr.length ? selEmoArr[0].emotion : 0
-      }, () => {
+      }
+
+      this.setState(tempState, () => {
 
         // Applying highlight to all matched, so it looks like a group
         // currElGroup = $(mainParent).find(`[selid="${selid}"]`)
@@ -175,17 +182,50 @@ export default class ManagerContent extends Component {
   }
 
   setNotification = notifType => this.setState({ notifType })
-
+  
+  backToMain = type => {
+    if(type !== "undo"){
+      this.setState({ 
+        notifType: "",
+        source: { name: "" },
+        ceContent: "",
+        pq: 0,
+      })
+    } else{
+      this.setState({ notifType: "" })
+    }
+  }
+  
   logout = () => this.props.logout()
   
   handleSourceChange = name => {
     this.setState({ 
       source: { name },
-      noSource: name === ""
+      noSource: name === "",
+      showCreateSource: name !== "" && this.state.suggSources.length === 0
     })
   }
 
+  handleSourceSugg = suggSources => {
+    this.setState({ 
+      suggSources,
+      showCreateSource: this.state.source.name !== "" && suggSources.length === 0          
+    })  
+  }
+  
   sourceAdded = source => this.setState({ source })  
+  
+  createSource = () => {
+    this.http
+    .post('/api/v1/sources', {
+      name: this.state.source.name
+    }, auth)
+    .then(res => {
+      l(res)
+      this.setState({ showCreateSource: false })
+    })
+    .catch(err => l(err))
+  }
 
   handleCeChange = evt => {
     let val = evt.target.value
@@ -232,20 +272,28 @@ export default class ManagerContent extends Component {
     this.closePopover(0, tmpHtml)
   }
 
-  // handleMouseDown = e => {
-  //   // l("Mouse Down on contenteditable")
-  //   sp(e)
-  //   this.closePopover(0, tmpHtml)
-  // }
+//   handleMouseDown = e => {
+//     // l("Mouse Down on contenteditable")
+//     // sp(e)
+//     // this.setState({ 
+//     //   showCreateSource: false
+//     // })
+//     // if(currSel) currSel.removeAllRanges() 
+// 
+//     // this.closePopover(0, tmpHtml)
+//   }
 
   handleMouseUp = e => {
-    hoverEl = null
+    // hoverEl = $(e.target)
+    // if(!hoverEl.hasClass("mark")) hoverEl = null    
+    
+    hoverEl = null    
 
     // Preserving html in case no tags added
     let parent = this.contentEditable.current
     tmpHtml = $(parent).html()
     // l(tmpHtml)
-
+    
     let currSel = rangy.getSelection()
     , selText = currSel.toString()
 
@@ -256,28 +304,33 @@ export default class ManagerContent extends Component {
       tempSelObj.start =  currSel.anchorOffset
       tempSelObj.end   =  currSel.focusOffset - 1
 
+      this.setState({ 
+        tempSelObj,
+        popOpen: true,
+        // popOpen: selText.length ? true : false,
+      }, () => {
+        this.highlightSelection(currSel.getRangeAt(0))
+        // currSel.removeAllRanges() // Not needed because user can't copy-paste 
+      })
+
       // Get suggested keywords for selected text
       this.http
       .get('/api/v1/suggested_tag_for_text', { query: tempSelObj.text })
       .then(res => {
         // l(res)
-        let suggTags = []
+        suggTags = []
         if(res.data.results){
           suggTags = res.data.results
         }
 
-        this.setState({ 
-          suggTags,
-          tempSelObj,
-          popOpen: true,
-        }, () => {
-          this.highlightSelection(currSel.getRangeAt(0))
-          // currSel.removeAllRanges() /* Not needed because user can't copy-paste */
-        })
+        // Set to state in openPopover, because needed then        
+        // this.setState({ suggTags })
       })
       .catch(err => {
         l(err)
-      })        
+      }) 
+    } else{
+      this.setState({ popOpen: false })
     }
   }
 
@@ -331,6 +384,7 @@ export default class ManagerContent extends Component {
       popPos: "down",
       popType: options.type,
       tempSelObj,
+      suggTags,
     }, () => {
       hoverSelId = null
     })
@@ -350,7 +404,8 @@ export default class ManagerContent extends Component {
         emotion: 0, 
         editType: "add"
       },
-    }, () => {      
+      showCreateSource: false    
+    }, () => {
       tmpHtml = this.state.ceContent
       isEditing = false      
     })
@@ -442,10 +497,13 @@ export default class ManagerContent extends Component {
     let tempSelObj
 
     if(hoverSelId) tempSelObj = this.state.selEmoArr.filter(s => s.selId === hoverSelId)[0]      
-    else tempSelObj = this.state.tempSelObj
-
-    tempSelObj.emotion = num
-
+    else tempSelObj = this.state.tempSelObj    
+    
+    if(num === tempSelObj.emotion){ // Deselect
+      tempSelObj.emotion = 0
+    } else {
+      tempSelObj.emotion = num      
+    }
     this.setState({ tempSelObj })
   }
 
@@ -497,12 +555,50 @@ export default class ManagerContent extends Component {
             else this.setState({ selEmoArr }, this.createSelectionArea)
           break;
 
-          default: //case "edit"          
-            selEmoArr = this.state.selEmoArr.map(obj => {
-              if(obj.selId === tempSelObj.selId) return tempSelObj
-              else return obj
-            })
-            this.setState({ selEmoArr }, this.closePopover)
+          default: //case "edit"
+            if(tempSelObj.emotion === 0){
+              let tagArr = this.state.selTagArr.filter(s => s.selId === tempSelObj.selId)
+              , selEmoArr = this.state.selEmoArr.filter(s => s.selId !== tempSelObj.selId)
+        
+              // Check if tag arr also has no length. 
+              if(!tagArr.length){
+                // If no length, remove marked elements, remove from selTagArr
+                let mainParent = this.contentEditable.current
+                , selid = hoverEl.attr("selid")
+                , elementsToRemove = $(mainParent).find(`[selid="${selid}"]`)
+                , elLength = elementsToRemove.length
+                
+                // l("Remove these elements!", elementsToRemove, selid)
+        
+                if(elLength === 1) {
+                  elementsToRemove
+                  .replaceWith(elementsToRemove.html().replace(/\[|\]/g, ''))
+                }
+                else {          
+                  elementsToRemove.each((idx, obj) => {
+                    let el = $(obj)
+                    if(idx === 0)
+                      el.replaceWith(el.html().replace(/\[/g, ''))
+                    else if(idx === elLength - 1)
+                      el.replaceWith(el.html().replace(/\]/g, ''))
+                    else
+                      el.replaceWith(el.html())
+                  })
+                }
+        
+                tmpHtml = $(this.contentEditable.current).html()
+
+                this.setState({ selEmoArr }, () => { this.closePopover(0, tmpHtml) })
+              } else{                        
+                this.setState({ selEmoArr }, this.closePopover)
+              }
+            } else {
+              selEmoArr = this.state.selEmoArr.map(obj => {
+                if(obj.selId === tempSelObj.selId) return tempSelObj
+                else return obj
+              })
+              this.setState({ selEmoArr }, this.closePopover)
+            }
           break;
         }
       break;     
@@ -735,10 +831,10 @@ export default class ManagerContent extends Component {
   submit = e => {
     sp(e)
     // l(this.state)
-    if(this.state.source.name === ""){
-      // l("Sauce please")
-      this.setState({ noSource: true })
-    } else {      
+    // if(this.state.source.name === ""){
+    //   // l("Sauce please")
+    //   this.setState({ noSource: true })
+    // } else {      
       let tags = this.state.selTagArr.map(s => {
         let { start, end, text, ptq } = s
         return { 
@@ -765,12 +861,12 @@ export default class ManagerContent extends Component {
         l(res)
         this.setState({ 
           notifType: "submit",
-          source: { name: "" },
-          ceContent: ""
+          // source: { name: "" },
+          // ceContent: ""
         })
       })
       .catch(err => l(err))
-    }
+    // }
   }
   
   render(){
@@ -899,8 +995,9 @@ export default class ManagerContent extends Component {
               <div className="title">                
                 Your text has been sent for review successfully.
               </div>
-              <button className="btn-accent" onClick={() => this.setNotification("")} type="button">Next</button>              
-              <button className="btn-accent btn-anchor" onClick={() => this.setNotification("")} type="button">Undo</button>              
+              {/* <button className="btn-accent" onClick={() => this.setNotification("")} type="button">Next</button>               */}
+              <button className="btn-accent" onClick={() => this.backToMain("")} type="button">Next</button>              
+              <button className="btn-accent btn-anchor" onClick={() => this.backToMain("undo")} type="button">Undo</button>              
             </div>
           </div>}
 
@@ -917,7 +1014,8 @@ export default class ManagerContent extends Component {
 
           {this.state.notifType === "" && <div className="content-outer">
             <div className="container">
-              <div className={`ctn-text ctn-source ${this.state.noSource?"error":""}`}>
+              {/* <div className={`ctn-text ctn-source ${this.state.noSource?"error":""}`}> */}
+              <div className="ctn-text ctn-source">
                 <img src="assets/link-2.svg" alt=""/>
                 <AutoComplete
                   inputProps={{
@@ -928,8 +1026,11 @@ export default class ManagerContent extends Component {
                   type="sources"
                   optionSelected={this.sourceAdded}
                   inputChanged={this.handleSourceChange}
-                  // getCurrSugg={this.handleSuggestions}
+                  getCurrSugg={this.handleSourceSugg}
                  />
+                 {this.state.showCreateSource && <div className="ctn-no-sugg">
+                    No suggested sources. <a onClick={this.createSource} href="javascript:void(0)">Click to Create Source</a>               
+                  </div>}
               </div>
 
               <div className="ctn-text ctn-text-main" ref={this.ctnMainRef}>
@@ -1082,7 +1183,7 @@ export default class ManagerContent extends Component {
                       <button 
                         onClick={this.saveSelection} 
                         className="btn-accent"
-                        disabled={this.state.tempSelObj.emotion === 0}
+                        // disabled={this.state.tempSelObj.emotion === 0}
                       >Submit</button>
                       {/* <button  */}
                       {/*   onClick={() => this.selectEmoji(0)}  */}

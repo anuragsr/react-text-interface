@@ -80,6 +80,7 @@
 				border: 1px solid $ctn-text-bdr;
 				&.ctn-source{
 					@extend %j-f-s;
+					position: relative;
 					color: $w;
 					// font-family: $sp-r;
 					padding-left: 24px;
@@ -161,6 +162,19 @@
 					}
 					&.error{
 						border: 1px solid $cl-err;
+					}					
+					// No suggestion for sources popover
+					div.ctn-no-sugg{  
+					  background: $bg-pop;
+					  position: absolute;
+					  width: 400px;
+					  // height: 50px;
+					  top: 50px;
+					  left: 50px;
+					  padding: 15px;
+					  a{
+					  	font-size: 17px;
+					  }
 					}
 				}
 				&.ctn-text-main{

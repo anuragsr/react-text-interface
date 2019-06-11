@@ -68,7 +68,7 @@ export default class App extends Component {
           x_p: auth.password
         }, { maxAge: 3600 })
       }
-      l(auth)
+      // l(auth)
 
       this.setState({ isAuth: true })
 
