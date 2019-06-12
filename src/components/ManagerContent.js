@@ -44,7 +44,7 @@ export default class ManagerContent extends Component {
       pq: 0,
       // notifType: "", 
       // source: { name: "the-verge.ru" },
-      // ceContent: "Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample. Inserting at a specific index (rather than, say, at the first space character) has to use string slicing/substring: this text is a sample",      
+      // ceContent: "Mark tags in text User select part of text (word or phrase) Tag-button. Search for tag, then select Setup PTQ-value for tag: from 0 to 100 with step 10 Every word could have any tags After tags are added user could delete them if they were added by mistake. He hovers mouse on marked word or phrase, gets list of tags, deletes them. Emoji-button Choose one emotion",
       // pq: 40,
       noSource: false,
       popPos: "up",
@@ -183,6 +183,8 @@ export default class ManagerContent extends Component {
         source: { name: "" },
         ceContent: "",
         pq: 0,
+        selTagArr: [],
+        selEmoArr: [],
       })
     } else{
       this.setState({ notifType: "" })
@@ -243,8 +245,8 @@ export default class ManagerContent extends Component {
   handleMouseDownOutside = e => {
     // l("Mouse Down outside")
 
-    let mainParent = this.contentEditable.current
-    , elementsToRemove = $(mainParent).find(".highlight")
+    let mainParent = $(this.contentEditable.current)
+    , elementsToRemove = mainParent.find(".highlight")
     , elLength = elementsToRemove.length
 
     // l("Remove these elements!", elementsToRemove)
@@ -265,7 +267,8 @@ export default class ManagerContent extends Component {
       })
     }
 
-    tmpHtml = $(mainParent).html()
+    if(mainParent.length) mainParent[0].normalize()
+    tmpHtml = mainParent.html()
     this.closePopover(0, tmpHtml)
   }
 
@@ -294,14 +297,20 @@ export default class ManagerContent extends Component {
     if(selText.length){
 
       // l(e.target)
-      if($(e.target).hasClass("mark")) createInside = true      
+      if($(e.target).hasClass("mark")) createInside = true
       else createInside = false
 
       let tempSelObj = this.state.tempSelObj      
       tempSelObj.selId =  rand(5)
       tempSelObj.text  =  selText.replace(/\[|\]/g, '')
-      tempSelObj.start =  currSel.anchorOffset
-      tempSelObj.end   =  currSel.focusOffset - 1
+
+      if(currSel.isBackwards()){
+        tempSelObj.start =  currSel.focusOffset
+        tempSelObj.end   =  currSel.anchorOffset - 1
+      } else{        
+        tempSelObj.start =  currSel.anchorOffset
+        tempSelObj.end   =  currSel.focusOffset - 1
+      }
 
       this.setState({ 
         tempSelObj,
@@ -525,7 +534,9 @@ export default class ManagerContent extends Component {
             selTagArr.push(tempSelObj)
 
             if(noCreate) this.setState({ selTagArr }, this.closePopover)
-            else this.setState({ selTagArr }, this.createSelectionArea)
+            else this.setState({ selTagArr }, () => {
+              this.createSelectionArea("tag")
+            })
           break;
 
           default: //case "edit"
@@ -552,7 +563,9 @@ export default class ManagerContent extends Component {
               selEmoArr = this.state.selEmoArr
               selEmoArr.push(tempSelObj)
               if(noCreate) this.setState({ selEmoArr }, this.closePopover)
-              else this.setState({ selEmoArr }, this.createSelectionArea)
+              else this.setState({ selEmoArr }, () => {
+                this.createSelectionArea("emo")
+              })
             } else this.closePopover()
           break;
 
@@ -606,7 +619,7 @@ export default class ManagerContent extends Component {
     }
   }
 
-  createSelectionArea = () => {
+  createSelectionArea = (type) => {
     let parent = $(this.contentEditable.current)
     , selEl = parent.find(`[selid="${this.state.tempSelObj.selId}"]`)
 
@@ -616,7 +629,7 @@ export default class ManagerContent extends Component {
 
     if(selEl.length > 1){ // Tag outside tag
       $(selEl[0]).html("[" + $(selEl[0]).html())
-      $(selEl[selEl.length - 1]).html($(selEl[selEl.length - 1]).html() + "]")
+      $(selEl[selEl.length - 1]).html($(selEl[selEl.length - 1]).html() + "]")      
     }else{
       if(createInside){ // Tag inside tag
         let tempParent = selEl.parent()
@@ -671,8 +684,48 @@ export default class ManagerContent extends Component {
     })
 
     rangy.getSelection().removeAllRanges()    
-
     this.closePopover(0, parent.html())
+
+    // Finding length of previous nodes to add to caret position as it is returned relative to current node
+    let { tempSelObj } = this.state
+    , newSelEl = parent.find(`[selid="${tempSelObj.selId}"]`)
+    , nodeArr = [...parent[0].childNodes]
+    , nodeIdx = nodeArr.indexOf(newSelEl[0])
+    , tempLength = 0, i = 0
+
+    // while(nodeArr[i] !== newSelEl[0]){
+    while(nodeArr[i].textContent !== newSelEl[0].textContent){
+      tempLength+= nodeArr[i].textContent.replace(/\[|\]/g, '').length
+      i++
+    }
+    // l(parent[0].childNodes, newSelEl[0], nodeIdx, tempLength)
+
+    // Saving correct start and end of text for all situations
+    let caretPosStart = tempLength
+    , caretPosEnd = tempSelObj.start
+
+    selEl.toArray().forEach(el => caretPosEnd+= el.textContent.replace(/\[|\]/g, '').length)
+    caretPosEnd+= tempLength - tempSelObj.start - 1    
+
+    if(type === "emo"){ 
+      let { selEmoArr } = this.state
+
+      selEmoArr.filter(s => s.selId === tempSelObj.selId)[0].start = caretPosStart
+      selEmoArr.filter(s => s.selId === tempSelObj.selId)[0].end = caretPosEnd
+      
+      this.setState({ selEmoArr }, () => {
+        // l(this.state.selEmoArr)
+      })
+    } else{
+      let { selTagArr } = this.state
+
+      selTagArr.filter(s => s.selId === tempSelObj.selId)[0].start = caretPosStart
+      selTagArr.filter(s => s.selId === tempSelObj.selId)[0].end = caretPosEnd
+
+      this.setState({ selTagArr }, () => {
+        // l(this.state.selTagArr)
+      }) 
+    }
   }
   
   setShowTextErr = showTxtErr => this.setState({ showTxtErr })
