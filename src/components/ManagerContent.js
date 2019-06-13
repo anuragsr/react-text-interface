@@ -619,7 +619,7 @@ export default class ManagerContent extends Component {
     }
   }
 
-  createSelectionArea = (type) => {
+  createSelectionArea = type => {
     let parent = $(this.contentEditable.current)
     , selEl = parent.find(`[selid="${this.state.tempSelObj.selId}"]`)
 
@@ -667,7 +667,7 @@ export default class ManagerContent extends Component {
         mutations.forEach(mutation => {
           if (mutation.type === 'characterData' && !isSelecting) {
             let newValue = mutation.target.textContent.replace(/\[|\]/g, '')
-            l('old:', mutation.oldValue, 'new:', newValue)
+            // l('old:', mutation.oldValue, 'new:', newValue)
             if(newValue === ""){
               $(mutation.target).remove()
               let sel = window.getSelection()
@@ -726,6 +726,22 @@ export default class ManagerContent extends Component {
         // l(this.state.selTagArr)
       }) 
     }
+  }
+  
+  deleteSelection = () => {
+    let parent = $(this.contentEditable.current)
+    , elToRemove = parent.find(`[selid="${hoverSelId}"]`).toArray()
+    , selEmoArr = this.state.selEmoArr.filter(s => s.selId !== hoverSelId)
+    , selTagArr = this.state.selTagArr.filter(s => s.selId !== hoverSelId)
+    
+    elToRemove.forEach(c => {
+      let el = $(c)
+      if(el.parent().hasClass("mark")) el.parent().remove()
+      el.remove()
+    })
+
+    if(parent[0]) parent[0].normalize()
+    this.setState({ selEmoArr, selTagArr, ceContent: parent.html() }, this.hideHoverPopover)
   }
   
   setShowTextErr = showTxtErr => this.setState({ showTxtErr })
@@ -932,7 +948,7 @@ export default class ManagerContent extends Component {
       isTyping = false
     })
   }
-  
+
   submit = e => {
     sp(e)
     // l(this.state)
@@ -1331,6 +1347,12 @@ export default class ManagerContent extends Component {
                     })}
                     className="edit"
                     src="assets/emoji.svg" alt=" "           
+                  />}
+
+                  {(this.state.hoverTagArr.length > 0 || this.state.hoverEmo > 0) && <img
+                    onClick={this.deleteSelection}
+                    className="edit close"
+                    src="assets/plus.svg" alt=" "           
                   />}
                 </div>
 

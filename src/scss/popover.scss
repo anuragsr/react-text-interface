@@ -360,8 +360,15 @@ ul.tag-ctn{
     margin-left: 10px;
     padding-left: 10px;
     border-left: 1px solid rgba($w, .2);
-    // height: 24px;
-    cursor: pointer;    
+    padding-right: 10px;
+    border-right: 1px solid rgba($w, .2);
+    cursor: pointer;
+    &.close{
+      border-left: none;
+      height: 28px;
+      padding: 0;
+      transform: translateY(25%) rotateZ(45deg);
+    }
   }
 }
 
