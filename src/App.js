@@ -30,12 +30,12 @@ export default class App extends Component {
         password: ck.x_p
       }, this.login)
     }
-    // else{
-    //   this.setState({
-    //     username: 'contenter',
-    //     password: 'ExXgB6QjfQUwyMm7gcEd'
-    //   }, this.login)
-    // }
+    else{
+      this.setState({
+        username: 'contenter',
+        password: 'ExXgB6QjfQUwyMm7gcEd'
+      }, this.login)
+    }
   }
 
   handleInputChange = event => {

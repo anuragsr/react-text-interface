@@ -15,13 +15,15 @@ let tmpHtml
 , suggTags = []
 , hoverSelId
 , hoverEl
+, currTarget
+, currSelGlobal
 , isSelecting = false
 , isEditing = false
 , createInside = false
  //For placeholder
 , isTyping = false
 , currPlhStart
-// To remove span completely on backspace
+// To watch span value changes
 , mutationObserver = window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver
 
 export default class ManagerContent extends Component {
@@ -44,7 +46,7 @@ export default class ManagerContent extends Component {
       pq: 0,
       // notifType: "", 
       // source: { name: "the-verge.ru" },
-      // ceContent: "Mark tags in text User select part of text (word or phrase) Tag-button. Search for tag, then select Setup PTQ-value for tag: from 0 to 100 with step 10 Every word could have any tags After tags are added user could delete them if they were added by mistake. He hovers mouse on marked word or phrase, gets list of tags, deletes them. Emoji-button Choose one emotion",
+      ceContent: "Mark tags in text User select part of text (word or phrase) Tag-button. Search for tag, then select Setup PTQ-value for tag: from 0 to 100 with step 10 Every word could have any tags After tags are added user could delete them if they were added by mistake. He hovers mouse on marked word or phrase, gets list of tags, deletes them. Emoji-button Choose one emotion",
       // pq: 40,
       noSource: false,
       popPos: "up",
@@ -115,14 +117,6 @@ export default class ManagerContent extends Component {
     let mainParent = this.contentEditable.current
     if(!isSelecting && !isEditing && !$(mainParent).find(".highlight").length){
       let el = $(e.target)
-      , parent = el.parent()
-
-      // Traversing up to find highest span.mark parent
-      while(parent.hasClass("mark")){
-        el = parent
-        parent = parent.parent()
-      }
-      // l(el, el.attr("selid"))
 
       // Getting data for this selId
       let selid = el.attr("selid")
@@ -138,12 +132,7 @@ export default class ManagerContent extends Component {
         hoverEmo: selEmoArr.length ? selEmoArr[0].emotion : 0
       }
 
-      this.setState(tempState, () => {
-
-        // Applying highlight to all matched, so it looks like a group
-        // currElGroup = $(mainParent).find(`[selid="${selid}"]`)
-        // currElGroup.addClass("highlight")     
-
+      this.setState(tempState, () => {  
         // Showing popup on hover
         let pop = $(this.popRef.current)
         , pos = $(el).position()
@@ -162,12 +151,7 @@ export default class ManagerContent extends Component {
   }
 
   hideHoverPopover = () => {
-    // if(currElGroup){
-    //   currElGroup.removeClass("highlight")
-    //   currElGroup = null        
-    // }
-    // hoverEl = null
-
+    // l(this.state.selTagArr, this.state.selEmoArr)
     let pop = $(this.popRef.current)
     pop.css({
       display: "none",
@@ -222,11 +206,23 @@ export default class ManagerContent extends Component {
     .catch(err => l(err))
   }
 
+  //   handleMouseDown = e => {
+  //     l("Mouse Down on contenteditable")
+  //     sp(e)
+  //     this.setState({ 
+  //       showCreateSource: false
+  //     })
+  //     if(currSel) currSel.removeAllRanges() 
+  // 
+  //     this.closePopover(0, tmpHtml)
+  //   }
+
   handleCeChange = evt => {
     let parent = $(this.contentEditable.current)
     , val = evt.target.value
 
     if(val === "<br>" || val === "<div><br></div>") val = ""
+
     this.setState({ ceContent: val }, () => {
       tmpHtml = parent.html()      
     })
@@ -234,7 +230,9 @@ export default class ManagerContent extends Component {
 
   handlePaste = e => {
     e.preventDefault()
-    document.execCommand('insertHTML', false, e.clipboardData.getData('text/plain'))
+    let pasteData = e.clipboardData.getData('text/plain')
+    l(pasteData)
+    document.execCommand('insertHTML', false, pasteData)
   }
 
   handleMouseMove = e => {
@@ -272,19 +270,9 @@ export default class ManagerContent extends Component {
     this.closePopover(0, tmpHtml)
   }
 
-//   handleMouseDown = e => {
-//     l("Mouse Down on contenteditable")
-//     sp(e)
-//     this.setState({ 
-//       showCreateSource: false
-//     })
-//     if(currSel) currSel.removeAllRanges() 
-// 
-//     this.closePopover(0, tmpHtml)
-//   }
-
   handleMouseUp = e => {    
     hoverEl = null    
+    // hoverSelId = null
 
     // Preserving html in case no tags added
     let parent = this.contentEditable.current
@@ -292,7 +280,16 @@ export default class ManagerContent extends Component {
     // l(tmpHtml)
     
     let currSel = rangy.getSelection()
-    , selText = currSel.toString()
+    , selText = currSel.toString()    
+    
+    currSelGlobal = {
+      a: currSel.anchorOffset,
+      f: currSel.focusOffset,
+    }
+
+    currSelGlobal.length = currSelGlobal.f - currSelGlobal.a
+    if(currSelGlobal.length === 0) currSelGlobal.length = 1
+    else if(currSel.isBackwards()) currSelGlobal.length*= -1    
 
     if(selText.length){
 
@@ -398,8 +395,10 @@ export default class ManagerContent extends Component {
     })
   }
 
-  closePopover = (e, html) => {
+  closePopover = (e, html, maintainCursor) => {
     // l(this.state.selTagArr, this.state.selEmoArr)
+    let parent = this.contentEditable.current
+
     this.setState({ 
       popOpen: false, 
       tagStep: 1,
@@ -416,6 +415,18 @@ export default class ManagerContent extends Component {
     }, () => {
       tmpHtml = this.state.ceContent
       isEditing = false
+      parent && parent.normalize()
+
+      if(maintainCursor){        
+        let sel = window.getSelection()
+        , range = sel.getRangeAt(0)
+
+        range.collapse(false)
+        sel.removeAllRanges()
+        sel.addRange(range)
+
+        parent.focus()
+      }
     })
   }
   
@@ -446,30 +457,24 @@ export default class ManagerContent extends Component {
       // Check if emoji arr also has no length. 
       if(!emoArr.length){
         // If no length, remove marked elements, remove from selTagArr
-        let mainParent = this.contentEditable.current
+        let parent = $(this.contentEditable.current)
         , selid = hoverEl.attr("selid")
-        , elementsToRemove = $(mainParent).find(`[selid="${selid}"]`)
-        , elLength = elementsToRemove.length
+        , elToRemove = parent.find(`[selid="${selid}"]`)
         
-        // l("Remove these elements!", elementsToRemove, selid)
+        elToRemove.each((idx, obj) => {
+          let el = $(obj)
+          , elText = el.text().replace(/\[|\]/g, '')
+          , prev = el.prev(".mark")
+          , next = el.next(".mark")
 
-        if(elLength === 1) {
-          elementsToRemove
-          .replaceWith(elementsToRemove.html().replace(/\[|\]/g, ''))
-        }
-        else {          
-          elementsToRemove.each((idx, obj) => {
-            let el = $(obj)
-            if(idx === 0)
-              el.replaceWith(el.html().replace(/\[/g, ''))
-            else if(idx === elLength - 1)
-              el.replaceWith(el.html().replace(/\]/g, ''))
-            else
-              el.replaceWith(el.html())
-          })
-        }
+          if(prev.length && next.length && prev.attr("selid") === next.attr("selid")){
+            el.remove()
+            prev.html(prev.text() + elText + next.text())
+            next.remove()                    
+          } else el.replaceWith(elText)
+        })
 
-        tmpHtml = $(this.contentEditable.current).html()
+        tmpHtml = parent.html()
         
         this.setState({ 
           tempSelObj, 
@@ -577,31 +582,24 @@ export default class ManagerContent extends Component {
               // Check if tag arr also has no length. 
               if(!tagArr.length){
                 // If no length, remove marked elements, remove from selTagArr
-                let mainParent = this.contentEditable.current
+                let parent = $(this.contentEditable.current)
                 , selid = hoverEl.attr("selid")
-                , elementsToRemove = $(mainParent).find(`[selid="${selid}"]`)
-                , elLength = elementsToRemove.length
+                , elToRemove = parent.find(`[selid="${selid}"]`)
                 
-                // l("Remove these elements!", elementsToRemove, selid)
-        
-                if(elLength === 1) {
-                  elementsToRemove
-                  .replaceWith(elementsToRemove.html().replace(/\[|\]/g, ''))
-                }
-                else {          
-                  elementsToRemove.each((idx, obj) => {
-                    let el = $(obj)
-                    if(idx === 0)
-                      el.replaceWith(el.html().replace(/\[/g, ''))
-                    else if(idx === elLength - 1)
-                      el.replaceWith(el.html().replace(/\]/g, ''))
-                    else
-                      el.replaceWith(el.html())
-                  })
-                }
-        
-                tmpHtml = $(this.contentEditable.current).html()
+                elToRemove.each((idx, obj) => {
+                  let el = $(obj)
+                  , elText = el.text().replace(/\[|\]/g, '')
+                  , prev = el.prev(".mark")
+                  , next = el.next(".mark")
 
+                  if(prev.length && next.length && prev.attr("selid") === next.attr("selid")){
+                    el.remove()
+                    prev.html(prev.text() + elText + next.text())
+                    next.remove()                    
+                  } else el.replaceWith(elText)
+                })
+        
+                tmpHtml = parent.html()
                 this.setState({ selEmoArr }, () => { this.closePopover(0, tmpHtml) })
               } else{                        
                 this.setState({ selEmoArr }, this.closePopover)
@@ -628,8 +626,41 @@ export default class ManagerContent extends Component {
     .addClass("mark")
 
     if(selEl.length > 1){ // Tag outside tag
-      $(selEl[0]).html("[" + $(selEl[0]).html())
-      $(selEl[selEl.length - 1]).html($(selEl[selEl.length - 1]).html() + "]")      
+      if(createInside){ // Tag outside tag, but inside bigger tag
+        let selElArr = selEl.toArray()
+        selElArr.forEach((obj, idx) => {
+          let selEl = $(obj)
+          , tempParent = selEl.parent()
+          , childNodes = tempParent[0].childNodes
+          
+          // l(selEl, tempParent, childNodes)
+          let tempStr = ""
+          if(idx === 0){
+            tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[0].textContent}</span>`
+            tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">[${childNodes[1].textContent}</span>`
+          } else if(idx === selElArr.length - 1){
+            tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">${childNodes[0].textContent}]</span>`
+            tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[1].textContent}</span>`
+          } else{
+            tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[0].textContent}</span>`
+          }
+
+          tempParent.replaceWith(tempStr)
+        })
+      } else{
+        selEl.eq(0).html("[" + selEl.eq(0).html())
+        selEl.eq(selEl.length - 1).html(selEl.eq(selEl.length - 1).html() + "]")
+      }
+
+      selEl.toArray().forEach(elem => {
+        let el = $(elem)
+        let parent = el.parent()
+        while(parent.hasClass("mark")){
+          parent.html(el.html())
+          el = parent
+          parent = el.parent()
+        }
+      })
     }else{
       if(createInside){ // Tag inside tag
         let tempParent = selEl.parent()
@@ -639,15 +670,12 @@ export default class ManagerContent extends Component {
 
         let tempStr = ""
         tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[0].textContent}</span>`
-        tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">`
         
         if(childNodes[2]){
-          tempStr+=   `<span selid="${tempParent.attr("selid")}" class="mark">[${childNodes[1].textContent}]</span>`
-          tempStr+= `</span>`
+          tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">[${childNodes[1].textContent}]</span>`
           tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[2].textContent}</span>`
         } else {
-          tempStr+=   `<span selid="${tempParent.attr("selid")}" class="mark">[${childNodes[1].textContent}</span>`
-          tempStr+= `</span>`
+          tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">[${childNodes[1].textContent}</span>`
           tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">]</span>`          
         }
 
@@ -655,35 +683,10 @@ export default class ManagerContent extends Component {
       } else{  // Single tag      
         selEl.html("[" + selEl.html() + "]")
       }
-    }      
-        
-    // Attach MutationObserver to created spans, so we can delete them later by backspace
-    let config = { childList: true, characterData: true, characterDataOldValue:true, subtree: true }
-    , targets = parent.find("span.mark").toArray() // To observe all elements, even previous
-    // , targets = selEl.toArray()
+    }
 
-    targets.forEach(target => {
-      new mutationObserver(mutations => {
-        mutations.forEach(mutation => {
-          if (mutation.type === 'characterData' && !isSelecting) {
-            let newValue = mutation.target.textContent.replace(/\[|\]/g, '')
-            // l('old:', mutation.oldValue, 'new:', newValue)
-            if(newValue === ""){
-              $(mutation.target).remove()
-              let sel = window.getSelection()
-              , range = sel.getRangeAt(0)
-
-              range.collapse(false)
-              sel.removeAllRanges()
-              sel.addRange(range)
-            }
-          }
-        })
-      })
-      .observe(target, config)
-    })
-
-    rangy.getSelection().removeAllRanges()    
+    this.addObservers()
+    rangy.getSelection().removeAllRanges()
     this.closePopover(0, parent.html())
 
     // Finding length of previous nodes to add to caret position as it is returned relative to current node
@@ -728,22 +731,77 @@ export default class ManagerContent extends Component {
     }
   }
   
+  addObservers = () => {
+    // Attach MutationObserver to created spans to know selid of changed span
+    let parent = $(this.contentEditable.current)
+    , config = { childList: true, characterData: true, characterDataOldValue:true, subtree: true }
+    , targets = parent.find("span.mark").toArray() // To observe all elements, even previous
+
+    targets.forEach(target => {
+      new mutationObserver(mutations => {
+        mutations.forEach(mutation => {
+          if (mutation.type === 'characterData') {
+            currTarget = mutation.target.parentNode
+          }
+        })
+      })
+      .observe(target, config)
+    })
+  }
+
   deleteSelection = () => {
     let parent = $(this.contentEditable.current)
-    , elToRemove = parent.find(`[selid="${hoverSelId}"]`).toArray()
+    , elToRemove = parent.find(`[selid="${hoverSelId}"]`)
     , selEmoArr = this.state.selEmoArr.filter(s => s.selId !== hoverSelId)
     , selTagArr = this.state.selTagArr.filter(s => s.selId !== hoverSelId)
-    
-    elToRemove.forEach(c => {
-      let el = $(c)
-      if(el.parent().hasClass("mark")) el.parent().remove()
-      el.remove()
-    })
+    , prev, next, tmpObj
+
+    if(elToRemove.length > 1){ // Remove all from first till last span
+      let start = elToRemove.eq(0)
+      , end = elToRemove.eq(elToRemove.length - 1)
+      , between = start.nextUntil(end)
+      // l(start, between, end)
+      
+      prev = start.prev(".mark")
+      next = end.next(".mark")
+
+      between.toArray().forEach(obj => {
+        let el = $(obj)
+        selEmoArr = selEmoArr.filter(s => s.selId !== el.attr("selid"))
+        selTagArr = selTagArr.filter(s => s.selId !== el.attr("selid"))
+      })
+
+      between.remove()
+      start.remove()
+      end.remove()
+    } else{
+      prev = elToRemove.prev(".mark")
+      next = elToRemove.next(".mark")
+
+      elToRemove.remove()
+    }
+
+    // l(prev, next)
+    // Combining tags, updating text in the arrays
+    if(prev.length && next.length && prev.attr("selid") === next.attr("selid")){        
+      prev.html(prev.text() + next.text())
+      next.remove()
+
+      tmpObj = selEmoArr.filter(s => s.selId === prev.attr("selid"))[0]
+      if(tmpObj){ tmpObj.text = prev.text().replace(/\[|\]/g, '') }
+
+      tmpObj = selTagArr.filter(s => s.selId === prev.attr("selid"))[0]
+      if(tmpObj){ tmpObj.text = prev.text().replace(/\[|\]/g, '') }
+    }
 
     if(parent[0]) parent[0].normalize()
-    this.setState({ selEmoArr, selTagArr, ceContent: parent.html() }, this.hideHoverPopover)
+
+    this.setState({ selEmoArr, selTagArr, ceContent: parent.html() }, () => {
+      l(this.state.selTagArr, this.state.selEmoArr)
+      this.hideHoverPopover()
+    })
   }
-  
+
   setShowTextErr = showTxtErr => this.setState({ showTxtErr })
   
   showTextErr = () => {
@@ -787,9 +845,123 @@ export default class ManagerContent extends Component {
       parent.scrollTop = (childRect.top + parent.scrollTop) - parentRect.top
     }
   }
+  
+  handleKeyUp = e => {
+    if(!isTyping){ // If not typing for placeholder
+      // l(currTarget)
+      let parent = $(this.contentEditable.current)
+      , currId = $(currTarget).attr("selid")
+      , allEl = parent.find(`[selid="${currId}"]`)
+      , watchForText = []
+      , watchForPos = []
+      , leftElArr = [] // Elements to left of current 
+      , prev, next, tempObj
+      , diffInText
+      , { selEmoArr } = this.state
+      , { selTagArr } = this.state
+
+      if(allEl.length > 1){
+        prev = allEl.eq(0)
+        next = allEl.eq(1)
+      } else{
+        prev = next = allEl.eq(0)
+      }
+
+      while(prev.length && next.length && prev.attr("selid") === next.attr("selid")){
+        watchForText.push(prev.attr("selid"))
+        prev = prev.prev(".mark")
+        next = next.next(".mark")
+      }
+
+      watchForPos = $(currTarget)
+        .nextAll(".mark")
+        .addBack()
+        .toArray()
+        .map(e => $(e).attr("selid"))
+        .filter((v, i, a) => a.indexOf(v) === i)
+
+      leftElArr = $(currTarget)
+        .prevAll(".mark")
+        .toArray()
+        .map(e => $(e).attr("selid"))
+        .filter((v, i, a) => a.indexOf(v) === i)
+
+      // l(watchForText, currId, watchForPos, leftElArr)
+
+      watchForText.forEach(selId => {
+        // Check if single or split (tag inside tag)
+        let allEl = parent.find(`[selid="${selId}"]`), oldText, newText
+
+        if(allEl.length > 1){
+          let start = allEl.eq(0)
+          , end = allEl.eq(allEl.length - 1)
+          , between = start.nextUntil(end)
+          // l(start, between, end)
+          newText = start.text() + between.text() + end.text()
+        } else newText = allEl.text()
+
+        newText = newText.replace(/\[|\]/g, '')
+        
+        tempObj = selEmoArr.filter(s => s.selId === selId)
+        if(tempObj.length) {
+          oldText = tempObj[0].text
+          diffInText = oldText.length - newText.length
+          tempObj[0].text = newText
+          // l(oldText, newText, diffInText)
+        }
+
+        tempObj = selTagArr.filter(s => s.selId === selId)
+        if(tempObj.length) {
+          oldText = tempObj[0].text
+          diffInText = oldText.length - newText.length
+          tempObj[0].text = newText
+          // l(oldText, newText, diffInText)
+        }
+
+        if(!newText.length){ 
+          selEmoArr = selEmoArr.filter(s => s.selId !== selId)
+          selTagArr = selTagArr.filter(s => s.selId !== selId)
+          $(currTarget).remove() 
+        }
+      })
+
+      watchForPos.forEach(selId => {
+        if(selId === currId || leftElArr.indexOf(selId) > -1){ 
+          // Skip position start change if selId on both left and right of current
+          tempObj = selEmoArr.filter(s => s.selId === selId)
+          if(tempObj.length) { tempObj[0].end-= diffInText }
+          
+          tempObj = selTagArr.filter(s => s.selId === selId)
+          if(tempObj.length) { tempObj[0].end-= diffInText }
+        } else {
+          tempObj = selEmoArr.filter(s => s.selId === selId)
+          if(tempObj.length) { 
+            tempObj[0].start-= diffInText
+            tempObj[0].end-= diffInText
+          }
+
+          tempObj = selTagArr.filter(s => s.selId === selId)
+          if(tempObj.length) { 
+            tempObj[0].start-= diffInText
+            tempObj[0].end-= diffInText
+          }
+        }
+      })
+
+      this.setState({ 
+        selTagArr, 
+        selEmoArr,
+        ceContent: parent.html()
+      }, () => {
+        l(this.state.selTagArr, this.state.selEmoArr)        
+        this.closePopover(0, parent.html(), true) // true for maintaining cursor position    
+        this.hideHoverPopover()  
+      })
+    }
+  }
 
   handleKeyDown = e => {
-    let key = e.keyCode    
+    let key = e.keyCode
     if(!isTyping){
       if(key === 219 && e.shiftKey){ // '{' key
         isTyping = true        
@@ -1168,6 +1340,7 @@ export default class ManagerContent extends Component {
                   // onMouseDown={this.handleMouseDown}
                   onMouseUp={this.handleMouseUp}                  
                   onPaste={this.handlePaste}
+                  onKeyUp={this.handleKeyUp}
                   onKeyDown={this.handleKeyDown}
                 />
 
