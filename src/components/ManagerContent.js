@@ -634,13 +634,17 @@ export default class ManagerContent extends Component {
           , childNodes = tempParent[0].childNodes
           
           // l(selEl, tempParent, childNodes)
+          // l(childNodes)
           let tempStr = ""
           if(idx === 0){
             tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[0].textContent}</span>`
-            tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">[${childNodes[1].textContent}</span>`
+            // tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">[${childNodes[1].textContent}</span>`
+            if(childNodes[1]) tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">[${childNodes[1].textContent}</span>`
+            else tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">[</span>`            
           } else if(idx === selElArr.length - 1){
             tempStr+= `<span selid="${selEl.attr("selid")}" class="mark">${childNodes[0].textContent}]</span>`
-            tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[1].textContent}</span>`
+            // tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[1].textContent}</span>`
+            if(childNodes[1]) tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[1].textContent}</span>`
           } else{
             tempStr+= `<span selid="${tempParent.attr("selid")}" class="mark">${childNodes[0].textContent}</span>`
           }
@@ -749,61 +753,61 @@ export default class ManagerContent extends Component {
     })
   }
 
-  deleteSelection = () => {
-    let parent = $(this.contentEditable.current)
-    , elToRemove = parent.find(`[selid="${hoverSelId}"]`)
-    , selEmoArr = this.state.selEmoArr.filter(s => s.selId !== hoverSelId)
-    , selTagArr = this.state.selTagArr.filter(s => s.selId !== hoverSelId)
-    , prev, next, tmpObj
-
-    if(elToRemove.length > 1){ // Remove all from first till last span
-      let start = elToRemove.eq(0)
-      , end = elToRemove.eq(elToRemove.length - 1)
-      , between = start.nextUntil(end)
-      // l(start, between, end)
-      
-      prev = start.prev(".mark")
-      next = end.next(".mark")
-
-      between.toArray().forEach(obj => {
-        let el = $(obj)
-        selEmoArr = selEmoArr.filter(s => s.selId !== el.attr("selid"))
-        selTagArr = selTagArr.filter(s => s.selId !== el.attr("selid"))
-      })
-
-      between.remove()
-      start.remove()
-      end.remove()
-    } else{
-      prev = elToRemove.prev(".mark")
-      next = elToRemove.next(".mark")
-
-      selEmoArr = selEmoArr.filter(s => s.selId !== elToRemove.attr("selid"))
-      selTagArr = selTagArr.filter(s => s.selId !== elToRemove.attr("selid"))
-
-      elToRemove.remove()
-    }
-
-    // l(prev, next)
-    // Combining tags, updating text in the arrays
-    if(prev.length && next.length && prev.attr("selid") === next.attr("selid")){        
-      prev.html(prev.text() + next.text())
-      next.remove()
-
-      tmpObj = selEmoArr.filter(s => s.selId === prev.attr("selid"))[0]
-      if(tmpObj){ tmpObj.text = prev.text().replace(/\[|\]/g, '') }
-
-      tmpObj = selTagArr.filter(s => s.selId === prev.attr("selid"))[0]
-      if(tmpObj){ tmpObj.text = prev.text().replace(/\[|\]/g, '') }
-    }
-
-    if(parent[0]) parent[0].normalize()
-
-    this.setState({ selEmoArr, selTagArr, ceContent: parent.html() }, () => {
-      l(this.state.selTagArr, this.state.selEmoArr)
-      this.hideHoverPopover()
-    })
-  }
+//   deleteSelection = () => {
+//     let parent = $(this.contentEditable.current)
+//     , elToRemove = parent.find(`[selid="${hoverSelId}"]`)
+//     , selEmoArr = this.state.selEmoArr.filter(s => s.selId !== hoverSelId)
+//     , selTagArr = this.state.selTagArr.filter(s => s.selId !== hoverSelId)
+//     , prev, next, tmpObj
+// 
+//     if(elToRemove.length > 1){ // Remove all from first till last span
+//       let start = elToRemove.eq(0)
+//       , end = elToRemove.eq(elToRemove.length - 1)
+//       , between = start.nextUntil(end)
+//       // l(start, between, end)
+//       
+//       prev = start.prev(".mark")
+//       next = end.next(".mark")
+// 
+//       between.toArray().forEach(obj => {
+//         let el = $(obj)
+//         selEmoArr = selEmoArr.filter(s => s.selId !== el.attr("selid"))
+//         selTagArr = selTagArr.filter(s => s.selId !== el.attr("selid"))
+//       })
+// 
+//       between.remove()
+//       start.remove()
+//       end.remove()
+//     } else{
+//       prev = elToRemove.prev(".mark")
+//       next = elToRemove.next(".mark")
+// 
+//       selEmoArr = selEmoArr.filter(s => s.selId !== elToRemove.attr("selid"))
+//       selTagArr = selTagArr.filter(s => s.selId !== elToRemove.attr("selid"))
+// 
+//       elToRemove.remove()
+//     }
+// 
+//     // l(prev, next)
+//     // Combining tags, updating text in the arrays
+//     if(prev.length && next.length && prev.attr("selid") === next.attr("selid")){        
+//       prev.html(prev.text() + next.text())
+//       next.remove()
+// 
+//       tmpObj = selEmoArr.filter(s => s.selId === prev.attr("selid"))[0]
+//       if(tmpObj){ tmpObj.text = prev.text().replace(/\[|\]/g, '') }
+// 
+//       tmpObj = selTagArr.filter(s => s.selId === prev.attr("selid"))[0]
+//       if(tmpObj){ tmpObj.text = prev.text().replace(/\[|\]/g, '') }
+//     }
+// 
+//     if(parent[0]) parent[0].normalize()
+// 
+//     this.setState({ selEmoArr, selTagArr, ceContent: parent.html() }, () => {
+//       l(this.state.selTagArr, this.state.selEmoArr)
+//       this.hideHoverPopover()
+//     })
+//   }
 
   setShowTextErr = showTxtErr => this.setState({ showTxtErr })
   
@@ -964,7 +968,7 @@ export default class ManagerContent extends Component {
         selEmoArr,
         ceContent: parent.html()
       }, () => {
-        // l(this.state.selTagArr, this.state.selEmoArr)        
+        // l(this.state.selTagArr, this.state.selEmoArr)
         this.closePopover(0, parent.html(), true) // true for maintaining cursor position    
         this.hideHoverPopover()  
       })
@@ -1533,11 +1537,11 @@ export default class ManagerContent extends Component {
                     src="assets/emoji.svg" alt=" "           
                   />}
 
-                  {(this.state.hoverTagArr.length > 0 || this.state.hoverEmo > 0) && <img
-                    onClick={this.deleteSelection}
-                    className="edit close"
-                    src="assets/plus.svg" alt=" "           
-                  />}
+                  {/* {(this.state.hoverTagArr.length > 0 || this.state.hoverEmo > 0) && <img */}
+                  {/*   onClick={this.deleteSelection} */}
+                  {/*   className="edit close" */}
+                  {/*   src="assets/plus.svg" alt=" "/}
+                  {/* />} */}
                 </div>
 
                 {/* Popover for placeholder */}
@@ -1571,11 +1575,6 @@ export default class ManagerContent extends Component {
                           No matching placeholders
                         </div>}
                       </div>
-                      {/* <img  */}
-                      {/*   onClick={() => this.processPlhInput({ type: "remove" })} */}
-                      {/*   className="close" */}
-                      {/*   src="assets/bounds.svg" alt=" " */}
-                      {/* /> */}
                     </div>                    
                   </div>
                 </Popover>
