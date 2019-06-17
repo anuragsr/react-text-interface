@@ -16,7 +16,7 @@ let tmpHtml
 , hoverSelId
 , hoverEl
 , currTarget
-, currSelGlobal
+// , currSelGlobal
 , isSelecting = false
 , isEditing = false
 , createInside = false
@@ -46,7 +46,7 @@ export default class ManagerContent extends Component {
       pq: 0,
       // notifType: "", 
       // source: { name: "the-verge.ru" },
-      ceContent: "Mark tags in text User select part of text (word or phrase) Tag-button. Search for tag, then select Setup PTQ-value for tag: from 0 to 100 with step 10 Every word could have any tags After tags are added user could delete them if they were added by mistake. He hovers mouse on marked word or phrase, gets list of tags, deletes them. Emoji-button Choose one emotion",
+      // ceContent: "Mark tags in text User select part of text (word or phrase) Tag-button. Search for tag, then select Setup PTQ-value for tag: from 0 to 100 with step 10 Every word could have any tags After tags are added user could delete them if they were added by mistake. He hovers mouse on marked word or phrase, gets list of tags, deletes them. Emoji-button Choose one emotion",
       // pq: 40,
       noSource: false,
       popPos: "up",
@@ -231,7 +231,7 @@ export default class ManagerContent extends Component {
   handlePaste = e => {
     e.preventDefault()
     let pasteData = e.clipboardData.getData('text/plain')
-    l(pasteData)
+    // l(pasteData)
     document.execCommand('insertHTML', false, pasteData)
   }
 
@@ -282,14 +282,14 @@ export default class ManagerContent extends Component {
     let currSel = rangy.getSelection()
     , selText = currSel.toString()    
     
-    currSelGlobal = {
-      a: currSel.anchorOffset,
-      f: currSel.focusOffset,
-    }
-
-    currSelGlobal.length = currSelGlobal.f - currSelGlobal.a
-    if(currSelGlobal.length === 0) currSelGlobal.length = 1
-    else if(currSel.isBackwards()) currSelGlobal.length*= -1    
+    // currSelGlobal = {
+    //   a: currSel.anchorOffset,
+    //   f: currSel.focusOffset,
+    // }
+    // 
+    // currSelGlobal.length = currSelGlobal.f - currSelGlobal.a
+    // if(currSelGlobal.length === 0) currSelGlobal.length = 1
+    // else if(currSel.isBackwards()) currSelGlobal.length*= -1    
 
     if(selText.length){
 
@@ -778,6 +778,9 @@ export default class ManagerContent extends Component {
       prev = elToRemove.prev(".mark")
       next = elToRemove.next(".mark")
 
+      selEmoArr = selEmoArr.filter(s => s.selId !== elToRemove.attr("selid"))
+      selTagArr = selTagArr.filter(s => s.selId !== elToRemove.attr("selid"))
+
       elToRemove.remove()
     }
 
@@ -859,6 +862,7 @@ export default class ManagerContent extends Component {
       , diffInText
       , { selEmoArr } = this.state
       , { selTagArr } = this.state
+
 
       if(allEl.length > 1){
         prev = allEl.eq(0)
@@ -948,18 +952,25 @@ export default class ManagerContent extends Component {
         }
       })
 
+      // Entire element removed (mutation observer not called, using hoverSelId)
+      if(!parent.find(`[selid="${hoverSelId}"]`).length){
+        // l("Element is no more.")
+        selEmoArr = selEmoArr.filter(s => s.selId !== hoverSelId)
+        selTagArr = selTagArr.filter(s => s.selId !== hoverSelId)
+      }
+
       this.setState({ 
         selTagArr, 
         selEmoArr,
         ceContent: parent.html()
       }, () => {
-        l(this.state.selTagArr, this.state.selEmoArr)        
+        // l(this.state.selTagArr, this.state.selEmoArr)        
         this.closePopover(0, parent.html(), true) // true for maintaining cursor position    
         this.hideHoverPopover()  
       })
     }
   }
-
+  
   handleKeyDown = e => {
     let key = e.keyCode
     if(!isTyping){

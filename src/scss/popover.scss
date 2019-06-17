@@ -360,8 +360,8 @@ ul.tag-ctn{
     margin-left: 10px;
     padding-left: 10px;
     border-left: 1px solid rgba($w, .2);
-    // padding-right: 10px;
-    // border-right: 1px solid rgba($w, .2);
+    padding-right: 10px;
+    border-right: 1px solid rgba($w, .2);
     cursor: pointer;
     &.close{
       border-left: none;
