@@ -177,7 +177,11 @@ export default class ManagerContent extends Component {
         upProgress: 0
       })
     } else{
-      this.setState({ notifType: "", upProgress: 0 })
+      this.setState({ 
+        notifType: "", 
+        upProgress: 0,
+        showProgress: false,
+      })
     }
   }
   
