@@ -164,7 +164,7 @@
 						border: 1px solid $cl-err;
 					}					
 					// No suggestion for sources popover
-					div.ctn-no-sugg{  
+					div.ctn-no-sugg{
 					  background: $bg-pop;
 					  position: absolute;
 					  width: 400px;
@@ -204,6 +204,107 @@
 					  }
 					}						
 				}
+			}
+		}
+		.ctn-music{
+			width: 100%;
+			padding: 0 20px;
+			font-size: 19px;
+			img.plh{
+				width: 24px;
+				vertical-align: bottom;
+			}
+			a{
+				color: $cl-ctn-text;
+				margin-left: 24px;
+			}
+			.modal{
+				.modal-dialog{
+					max-width: 490px;
+				}
+				.modal-content{
+					padding: 60px 40px;
+					&.progress{
+						padding: 26px;
+						box-sizing: content-box;
+						.bar-outer{
+							position: relative;
+							top: 5px;
+							height: 8px;
+							background: $bg-prog;
+							border-radius: 5px;
+						  box-shadow: inset -1px 1px 0 0 rgba($w, 0);
+						  .bar-inner{
+						  	@include pa(0, 0);
+								border-radius: 5px;
+						  	height: 100%;
+						  	background: $btn-pr;
+						  	width: 0;
+						  	transition: width .2s;
+						  }
+						}
+					}
+					.dropzone{
+					  @extend %j-c;
+					  flex-direction: column;
+					  width: 100%;
+					  background: $bg-tag;
+					  padding: 35px;
+					  border: 5px dashed $dz-bdr;
+					  border-radius: 10px;
+					  color: $lgn-pl;
+					  font-size: 17px;
+					  .inputfile {
+					    width: 0.1px;
+					    height: 0.1px;
+					    opacity: 0;
+					    overflow: hidden;
+					    position: absolute;
+					    z-index: -1;
+					  }
+					  label{
+					    cursor: pointer;
+					    text-decoration: underline;
+					  }
+					  span{
+					    color: $dz-txt;
+					  }
+					}
+					.file-info{
+				    color: $dz-txt;
+						margin-top: 35px;						
+					}
+					.ctn-up-action{
+						@extend %j-s-b;
+						margin-top: 35px;
+						.ctn-up-msg{
+							color: $lgn-pl;
+							font-size: 15px;
+							div:nth-of-type(2){
+								margin-left: 20px;
+							}
+							&.err{
+								padding: 5px 20px;
+								color: $w;
+								background: $up-err;
+								border-radius: 5px;
+								box-shadow: inset -1px 1px 0 0 rgba($w, 0);
+							}
+						}
+						button{
+							@include hw(44, 100);
+							font-size: 17px;
+						}
+					}
+					img.close{
+						@include pa(-30, -30);
+						opacity: 1;
+						cursor: pointer;
+					}
+				}
+			}			
+			.file-name{
+		    color: $dz-txt;		
 			}
 		}
 		.ctn-buttons{

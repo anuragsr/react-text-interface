@@ -8,6 +8,7 @@ import 'rangy/lib/rangy-classapplier'
 import AutoComplete from './AutoComplete'
 import Tags from './Tags'
 import SliderX from './Slider'
+import Modal from './Modal'
 import HttpService from '../services/HttpService'
 import { l, cl, auth, rand, sp } from '../helpers/common'
 
@@ -70,7 +71,11 @@ export default class ManagerContent extends Component {
       filterPlhArr: [],
       plhHighIdx: 0,
       currPlh: "",
-      showTxtErr: false
+      showTxtErr: false,
+      showModal: false,
+      upFile: "",
+      showProgress: false,
+      upProgress: 0
     }
   }
 
@@ -103,8 +108,6 @@ export default class ManagerContent extends Component {
         this.hideHoverPopover()
       }
     })
-
-    // this.getRandomText()
   }
 
   componentDidUpdate(){
@@ -169,9 +172,12 @@ export default class ManagerContent extends Component {
         pq: 0,
         selTagArr: [],
         selEmoArr: [],
+        upFile: "",
+        showProgress: false,
+        upProgress: 0
       })
     } else{
-      this.setState({ notifType: "" })
+      this.setState({ notifType: "", upProgress: 0 })
     }
   }
   
@@ -1137,46 +1143,67 @@ export default class ManagerContent extends Component {
   }
 
   submit = e => {
-    sp(e)
-    // l(this.state)
-    // if(this.state.source.name === ""){
-    //   // l("Sauce please")
-    //   this.setState({ noSource: true })
-    // } else {      
-      let tags = this.state.selTagArr.map(s => {
-        let { start, end, text, ptq } = s
-        return { 
-          start, end, text, ptq,
-          tag_id: s.tagArr.map(t => t.id)
-        }
-      })
-      , emotions = this.state.selEmoArr.map(s => {
-        let { start, end, text, emotion } = s
-        return { start, end, text, emotion }
-      })
-      , req = {
+    sp(e)     
+    let tags = this.state.selTagArr.map(s => {
+      let { start, end, text, ptq } = s
+      return { 
+        start, end, text, ptq,
+        tag_id: s.tagArr.map(t => t.id)
+      }
+    })
+    , emotions = this.state.selEmoArr.map(s => {
+      let { start, end, text, emotion } = s
+      return { start, end, text, emotion }
+    })
+    , req
+
+    if(this.state.upFile === ""){      
+      req = {
         user_type: "content_manager",
         source: this.state.source.name,
         text: $(this.contentEditable.current).text().replace(/\[|\]/g, ''),
         pq: this.state.pq, 
         tags, emotions
       }
+    } else{
+      req = new FormData()
+      req.append("file", this.state.upFile)
+      req.append("user_type", "content_manager")
+      req.append("source", this.state.source.name)
+      req.append("text", $(this.contentEditable.current).text().replace(/\[|\]/g, ''))
+      req.append("pq", this.state.pq)
+      tags.forEach(t => req.append("tags[]", t))
+      emotions.forEach(e => req.append("emotions[]", e))
+      this.setState({ showProgress: true, showModal: true })
+    }
 
-      l(req)
-      this.http
-      .post('/api/v1/submit_data', req, auth)
-      .then(res => {
-        l(res)
-        this.setState({ 
-          notifType: "submit",
-          // source: { name: "" },
-          // ceContent: ""
-        })
-      })
-      .catch(err => l(err))
-    // }
+    l(req)
+    this.http
+    .post('/api/v1/submit_data', req, auth, this.onUploadProgress)
+    .then(res => {
+      l(res)
+      this.child && this.child.handleCloseClick()
+      this.setState({ notifType: "submit" })
+    })
+    .catch(err => l(err))
+  }
+
+  onUploadProgress = e => {
+    let upProgress = Math.floor((e.loaded * 100) / e.total)
+    this.setState({ upProgress })
+  }
+
+  handleModalShowClick = e => {
+    e.preventDefault()
+    this.setState({ showModal: true })
+  }
+
+  handleModalCloseClick = () => {
+    this.setState({ showModal: false })
   }
   
+  fileChosen = upFile => this.setState({ upFile })
+
   render(){
     const placeUpOrDown = ({
       gap,
@@ -1322,9 +1349,8 @@ export default class ManagerContent extends Component {
 
           {this.state.notifType === "" && <div className="content-outer">
             <div className="container">
-              {/* <div className={`ctn-text ctn-source ${this.state.noSource?"error":""}`}> */}
               <div className="ctn-text ctn-source">
-                <img src="assets/link-2.svg" alt=""/>
+                <img src="assets/link.svg" alt=""/>
                 <AutoComplete
                   inputProps={{
                     className: 'auto-inp source',
@@ -1342,7 +1368,6 @@ export default class ManagerContent extends Component {
               </div>
 
               <div className="ctn-text ctn-text-main" ref={this.ctnMainRef}>
-
                 <img className="plh" src="assets/align-left.svg" alt=""/>
 
                 <ContentEditable
@@ -1359,7 +1384,7 @@ export default class ManagerContent extends Component {
                   onKeyDown={this.handleKeyDown}
                 />
 
-                <SliderX 
+                <SliderX
                   className="slider-main"
                   style={{ display: this.state.ceContent === "" ? "none" : "block"}}
                   ptq={this.state.pq} 
@@ -1578,7 +1603,25 @@ export default class ManagerContent extends Component {
                     </div>                    
                   </div>
                 </Popover>
+              </div>  
+
+              <div className="ctn-music">
+                <img className="plh" src="assets/audio.svg" alt=""/>
+                <a onClick={this.handleModalShowClick} href="javascript:void(0)">Add audio file</a>
+                {this.state.upFile !=="" && <div>
+                  Chosen file: <span className="file-name">{this.state.upFile.name}</span>
+                </div>}
+                {this.state.showModal ? (
+                  <Modal 
+                    ref={child => this.child = child}
+                    showProgress={this.state.showProgress}
+                    upProgress={this.state.upProgress}
+                    fileChosen={this.fileChosen} 
+                    handleModalCloseClick={this.handleModalCloseClick} 
+                  />
+                ) : null}
               </div>
+
             </div>
           </div>}
 
