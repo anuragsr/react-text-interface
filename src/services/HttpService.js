@@ -13,38 +13,29 @@ export default class HttpService {
       params,
       auth
     }
-    
-    // if (params && params.newBaseUrl) {
-    //   config.url = url      
-    //   delete config.params.newBaseUrl
-    // }
 
     return this.doRequest(config)
   }
   
-  post(url, data, auth) {
+  post(url, data, auth, onUploadProgress) {
     let config = {
       method: "post",
       url: apiHost + url,
       data,
-      auth
-    }
-
-    if (data.newBaseUrl) {
-      config.url = url
-      config.data = data.file
-      delete config.data.newBaseUrl
+      auth,
+      onUploadProgress
     }
     
     return this.doRequest(config)
   }
 
-  put(url, data, auth) {
+  put(url, data, auth, onUploadProgress) {
     let config = {
       method: "put",
       url: apiHost + url,
       data,
-      auth
+      auth,
+      onUploadProgress
     }
     return this.doRequest(config)
   }

@@ -3,28 +3,10 @@ import { Slider, Rail, Handles, Tracks } from 'react-compound-slider'
 
 import { l } from '../helpers/common'
 
-const Track = ({ source, target, getTrackProps }) => { // Track component
-
-  // const getStyle = source => {
-  //   let ret = {}
-  //   if(source.id === '$$-0'){
-  //     if(source.value < 0){
-  //       ret.left = `${source.percent}%`
-  //       ret.width = `${50 - source.percent}%`
-  //       ret.backgroundColor = '#ff4c43'
-  //     } else{
-  //       ret.left = `${50}%`
-  //       ret.width = `${source.percent - 50}%`
-  //       ret.backgroundColor = '#56d86c'
-  //     }
-  //   }
-  //   return ret
-  // }
-
+const Track = ({ source, target, getTrackProps }) => { // Track component  
   return (
     <div 
       className="slider-track"
-      // style={getStyle(source)}  
       style={{
          left: `${source.percent}%`,
          width: `${target.percent - source.percent}%`,
@@ -44,30 +26,27 @@ const Handle = ({ handle: { id, percent }, getHandleProps }) => { // Handle comp
   )
 }
 
-// let rangeValues = [0]
-
 export default class SliderX extends Component {
   constructor(props) {
     super(props)
     this.state = { ptq: this.props.ptq }
   }
   
-  componentWillReceiveProps = nextProps => {
-    this.setState({ ptq: nextProps.ptq })
-  }
+  componentWillReceiveProps = nextProps => this.setState({ ptq: nextProps.ptq })
 
   onSliderChange = value => {
     let val = value[0]
     this.setState({ ptq: val }, this.props.changePTQ(val))
   }
 
-  resetAttr = () => this.onSliderChange([this.state.ptq])
-
   render() {
     return (
-      <div>
+      <div
+        className={this.props.className}
+        style={this.props.style}
+        >
         <div className="sl-title">
-          <div>Choose PTQ (Place-tag Quality)</div>
+          <div>{this.props.title}</div>
           <div>{this.state.ptq}</div>
         </div>
         <Slider

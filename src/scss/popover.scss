@@ -1,9 +1,11 @@
-.ctn-pop {
+// For selection popover
+.ctn-pop-outer {
+  opacity: 0;
   position: relative;
   background: $bg-pop;
   color: $w;
   font-family: $sp-r;  
-  &:after{    
+  &:after{
     left: 50%;
     border: solid transparent;
     content: " ";
@@ -19,7 +21,7 @@
     top: 100%;
     border-top-color: $bg-pop;
   }
-  &.arrow-top:after{    
+  &.arrow-top:after{
     bottom: 100%;
     border-bottom-color: $bg-pop;
   } 
@@ -34,199 +36,396 @@
       }
     }
   }
-  .ctn-tag{
+  .ctn-pop-inner{
     width: 400px;
-    min-height: 50px;   
-    &>div, .react-autosuggest__container{
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
-    .react-autosuggest__container{
-      padding-left: 20px;
-    }
-    .react-autosuggest__suggestions-container--open{
-      // width: auto;
-      // height: unset;
-      // top: 50px;
-      position: relative;
-      max-height: 300px;
-      overflow-y: scroll;
-      overflow-x: hidden;
-      width: 400px;     
-      left: -20px;
-      background: $bg-pop;
-      border-top: 1px solid rgba($ctn-auto-bdr, .2);
-      &::-webkit-scrollbar {
-        width: 10px;
-      }      
-      &::-webkit-scrollbar-thumb {
-        border-radius: 5px;         
-        background: rgba($w, .2);         
+    min-height: 50px;
+    &.ctn-tag{
+      // Autocomplete
+      &>div, .react-autosuggest__container{
+        position: relative;
+        width: 100%;
+        height: 100%;
       }
-      .react-autosuggest__suggestions-list{
-        padding: 20px;
-        padding-top: 0;
-        li.react-autosuggest__suggestion{
-          cursor: pointer;
-          display: block;
-          margin: 15px 0;
-          div{
-            justify-content: flex-start;
-          }
-          span{
-            white-space: nowrap;
-          }
-          .highlight{
-            color: $w;
-            margin: 0;
-          }
-          &.react-autosuggest__suggestion--first{
-            margin-top: 10px;
-          }
+      .react-autosuggest__container{
+        padding-left: 20px;
+      }
+      .react-autosuggest__suggestions-container--open{
+        // width: auto;
+        // height: unset;
+        // top: 50px;
+        position: relative;
+        max-height: 300px;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        width: 400px;     
+        left: -20px;
+        background: $bg-pop;
+        border-top: 1px solid rgba($ctn-auto-bdr, .2);
+        &::-webkit-scrollbar {
+          width: 10px;
+        }      
+        &::-webkit-scrollbar-thumb {
+          border-radius: 5px;         
+          background: rgba($w, .2);         
         }
-      }
-    }
-    .auto-inp{
-      font-family: $sp-r;
-      font-size: 17px;
-      height: 50px;
-      width: 90%;
-      padding: 0;
-      border: none;
-      background: transparent;
-      color: $w;
-      &::-webkit-input-placeholder { /* Chrome/Opera/Safari */
-        color: $w;
-      }
-      &::-moz-placeholder { /* Firefox 19+ */
-        color: $w;
-      }
-      &:-ms-input-placeholder { /* IE 10+ */
-        color: $w;
-      }
-      &:-moz-placeholder { /* Firefox 18- */
-        color: $w;
-      }
-      &:focus{
-        outline: none;
-      }
-    }
-    img.close{
-      cursor: pointer;
-      height: 30px;
-      position: absolute;
-      right: 10px;
-      top: 10px;
-      z-index: 1;
-    }
-  }
-  .ctn-ptq{
-    padding: 6px;
-    position: relative;
-    .ctn-tags-chosen{
-      width: 90%;
-      min-height: 50px;
-      ul.tag-ctn{
-        // padding: 5px;
-        font-size: 15px;
-        padding-left: 0;
-        border-radius: 2px;
-        margin-bottom: 0;
-        li{
-          cursor: default;
-          display: inline-block;
-          vertical-align: top;    
-          padding: 3px 6px;
-          background: $bg-tag;
-          color: $b;
-          border-radius: 5px;
-          margin-right: 5px;
-          margin-bottom: 5px;  
-          height: 38px;
-          div{
-            @extend %j-s-b;
-            height: 100%;
-          }
-          img.tag-img{
-            height: 32px;
-          }
-          img.del-tag{
-            cursor: pointer;            
-            margin-left: 10px;
-            height: 7px;
-            width: 7px;
-          }
-          span.tag-name{
-            margin-left: 10px;
-          }
-          &.last{
-            padding-top: 5px;
-            background: none;
-            img{
-              cursor: pointer;
-              height: 24px;
+        .react-autosuggest__suggestions-list{
+          // padding: 20px;
+          // padding-top: 0;
+          padding: 0;
+          padding-left: 10px;
+          li.react-autosuggest__suggestion{
+            cursor: pointer;
+            display: block;
+            // margin: 15px 0;
+            padding: 15px;
+            div{
+              justify-content: flex-start;
+            }
+            span{
+              white-space: nowrap;
+            }
+            .highlight{
+              color: $w;
+              margin: 0;
+            }
+            &.react-autosuggest__suggestion--first{
+              margin-top: 10px;
+            }
+            &.react-autosuggest__suggestion--highlighted{
+              background: rgba($bg-auto-high, .4);
             }
           }
         }
       }
-    }
-    img.close{
-      cursor: pointer;
-      height: 30px;
-      position: absolute;
-      right: 10px;
-      top: 10px;
-      z-index: 1;
-    }
-    .ctn-ptq-opt{
-      padding: 20px;
-      border-top: 1px solid rgba($ctn-auto-bdr, .2);
-      .slider-outer{
-        position: relative;
-        width: 100%;
-        font-family: $sp-r;  
-        .slider-rail{
-          position: absolute;
-          width: 100%;
-          height: 4px;
-          border-radius: 5px;
-          background-color: $sl-bg;
-          cursor: pointer;    
+      .auto-inp{
+        // opacity: 0;
+        font-family: $sp-r;
+        font-size: 17px;
+        height: 50px;
+        width: 90%;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: $w;
+        &::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+          color: $w;
         }
-        .slider-handle{
+        &::-moz-placeholder { /* Firefox 19+ */
+          color: $w;
+        }
+        &:-ms-input-placeholder { /* IE 10+ */
+          color: $w;
+        }
+        &:-moz-placeholder { /* Firefox 18- */
+          color: $w;
+        }
+        &:focus{
+          outline: none;
+        }
+      }
+      img.close{
+        cursor: pointer;
+        height: 30px;
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        z-index: 1;
+      }
+
+      // Suggested Tags
+      .ctn-sugg{
+        font-size: 17px;        
+        border-top: 1px solid rgba($ctn-auto-bdr, .2);
+        padding: 20px;
+        .sugg-title{
+          margin-bottom: 10px;
+        }
+      }
+
+      // Main tags and ptq box
+      .ctn-ptq{
+        padding: 6px;
+        position: relative;
+        .ctn-tags-chosen{
+          width: 90%;
+          min-height: 50px;
+        }
+        img.close{
+          cursor: pointer;
+          height: 30px;
           position: absolute;
-          margin-left: -10px;
-          margin-top: -8px;
-          width: 20px;
-          height: 20px;
-          border: none;
-          text-align: center;
-          cursor: grab;
-          border-radius: 50%;
-          background-color: $bg-pr;
+          right: 10px;
+          top: 10px;
           z-index: 1;
         }
-        .slider-track{
-          position: absolute;
-          height: 4px;
-          z-index: 0;
-          cursor: pointer;    
-          background-color: $bg-pr;
+        .ctn-ptq-opt{
+          padding: 20px;
+          border-top: 1px solid rgba($ctn-auto-bdr, .2);          
+        }
+        .btn-accent{      
+          height: 50px;
+          width: 100%;
+          margin-top: 25px;
         }
       }
-      .sl-title{ // For both slider and tags title
-        @extend %j-s-b;
+    }
+    &.ctn-emo{
+      padding: 6px;
+      .ctn-emo-plh{ height: 50px; }
+      .ctn-emo-inner{
+        // @include hw(200, 400);
+        padding: 20px;
+        border-top: 1px solid rgba($ctn-auto-bdr, .2);
+        .emo-outer{
+          @extend %j-s-b;
+          padding: 0 10px;
+          margin-top: 30px;
+          margin-bottom: 10px;
+          .emo-single{
+            @include hw(50, 50);            
+            position: relative; 
+            cursor: pointer;
+            img{
+              @include pa(0, 0);
+              &.clr{ opacity: 0; }
+              &.bw{ opacity: 1; }   
+            }
+            &.active, &:hover{
+              img{
+                &.clr{ opacity: 1; }
+                &.bw{ opacity: 0; }
+              }
+            }    
+          }
+        }
+      }      
+      .btn-accent{      
+        height: 50px;
         width: 100%;
-        font-size: 15px;
-        color: $w;
-        margin-bottom: 25px;
+        // &.btn-sec{
+        //   width: 48%;
+        //   margin-left: 5px;
+        // }
+      }
+      img.close{
+        cursor: pointer;
+        height: 30px;
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        z-index: 1;
       }
     }
-    .btn-accent{      
-      height: 50px;
-      width: 100%;
-      margin-top: 25px;
+  }
+}
+
+// For tags component
+ul.tag-ctn{
+  // padding: 5px;
+  font-size: 15px;
+  padding-left: 0;
+  border-radius: 2px;
+  margin-bottom: 0;
+  li{
+    cursor: default;
+    display: inline-block;
+    vertical-align: top;    
+    padding: 3px 6px;
+    background: $bg-tag;
+    color: $b;
+    border-radius: 5px;
+    margin-right: 5px;
+    margin-bottom: 5px;  
+    // height: 38px;
+    min-height: 38px;
+    div{
+      @extend %j-s-b;
+      height: 100%;
     }
+    img.tag-img{
+      height: 32px;
+    }
+    img.del-tag{
+      cursor: pointer;            
+      margin-left: 10px;
+      height: 7px;
+      width: 7px;
+    }
+    span.tag-name{
+      margin-left: 10px;
+    }
+    &.last{
+      padding-top: 5px;
+      background: none;
+      img{
+        cursor: pointer;
+        height: 24px;
+      }
+    }
+  }
+}
+
+// For slider
+.slider-outer{
+  position: relative;
+  width: 100%;
+  font-family: $sp-r;  
+  .slider-rail{
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    border-radius: 5px;
+    background-color: $sl-bg;
+    cursor: pointer;    
+  }
+  .slider-handle{
+    position: absolute;
+    margin-left: -10px;
+    margin-top: -8px;
+    width: 20px;
+    height: 20px;
+    border: none;
+    text-align: center;
+    cursor: grab;
+    border-radius: 50%;
+    background-color: $bg-pr;
+    z-index: 1;
+  }
+  .slider-track{
+    position: absolute;
+    height: 4px;
+    z-index: 0;
+    cursor: pointer;    
+    background-color: $bg-pr;
+  }
+}
+
+.sl-title{
+  @extend %j-s-b;
+  width: 100%;
+  font-size: 15px;
+  color: $w;
+  margin-bottom: 25px;
+}
+
+.slider-main{
+  margin-top: 60px;  
+  .sl-title{
+    line-height: 1.53;
+    font-size: 17px;
+    color: $cl-ctn-text;
+  }
+}
+
+// For hover popover
+.ctn-pop-hover{
+  // @include hw(50, 400);
+  // width: 400px;
+  min-height: 50px;
+  // width: max-content;
+  @include pa(0, 0);
+  display: none;
+  // opacity: 0;
+  color: $w;
+  background: $bg-pop;
+  padding: 6px 10px;
+  &:after{
+    left: 50%;
+    border: solid transparent;
+    content: " ";
+    height: 0;
+    width: 0;
+    position: absolute;
+    pointer-events: none;
+    border-color: rgba($b, 0);
+    border-width: 10px;
+    margin-left: -10px;
+  }
+  &.arrow-bottom:after{
+    top: 100%;
+    border-top-color: $bg-pop;
+  }
+  ul.tag-ctn{
+    display: inline-block;
+    vertical-align: middle;
+    li{
+      margin-top: 2.5px;
+      margin-bottom: 2.5px;
+    }
+    &+img.edit{
+      margin-left: 0px;
+    }
+  }
+  img.edit{
+    margin-left: 10px;
+    padding-left: 10px;
+    border-left: 1px solid rgba($w, .2);
+    // padding-right: 10px;
+    // border-right: 1px solid rgba($w, .2);
+    cursor: pointer;
+    &.close{
+      border-left: none;
+      height: 28px;
+      padding: 0;
+      transform: translateY(25%) rotateZ(45deg);
+    }
+  }
+}
+
+// For placeholder popover
+.ctn-plh{
+  width: 250px;
+  // padding-top: 45px;
+  // min-height: 50px;
+  .plh-sugg-outer{
+    position: relative;
+    max-height: 250px;
+    // max-height: 240px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    width: 100%;
+    // left: -20px;
+    background: $bg-pop;
+    // border-top: 1px solid rgba($ctn-auto-bdr, .2);
+    &::-webkit-scrollbar {
+      width: 10px;
+    }      
+    &::-webkit-scrollbar-thumb {
+      border-radius: 5px;         
+      background: rgba($w, .2);         
+    }
+    ul{
+      padding: 0;
+      padding-left: 10px;
+      li{
+        cursor: pointer;
+        display: block;
+        padding: 10px;
+        width: calc(100% - 10px);
+        div{
+          justify-content: flex-start;
+        }
+        &:nth-of-type(1){
+          margin-top: 15px;
+        }
+        &:hover, &.plh-highlighted{
+          background: rgba($bg-auto-high, .4);
+        }
+      }
+    }
+    .ctn-no-plh{      
+      text-align: center;
+      padding: 15px 0;
+      position: relative;
+      left: 5.5px;
+    }
+  }  
+  img.close{
+    cursor: pointer;
+    height: 30px;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    z-index: 1;
   }
 }
