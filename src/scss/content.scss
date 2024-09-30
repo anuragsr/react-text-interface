@@ -308,8 +308,8 @@
 			}
 		}
 		.ctn-buttons{
-			@include pa("", 0, 0, "");
-			width: 100%;
+			@include pa("", "", 0, 0);
+			width: 50%;
 			text-align: right;
 			padding: 16px;
 			.btn-accent{
